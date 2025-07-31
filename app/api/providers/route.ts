@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
       anthropic: process.env.ANTHROPIC_API_KEY,
       xai: process.env.XAI_API_KEY,
       openrouter: process.env.OPENROUTER_API_KEY,
+      ahamai: "ahamaibyprakash25", // Default API key for AhamAI
     }
 
     return NextResponse.json({
