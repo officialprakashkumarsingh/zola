@@ -47,6 +47,7 @@ export async function getEffectiveApiKey(
     anthropic: env.ANTHROPIC_API_KEY,
     xai: env.XAI_API_KEY,
     openrouter: env.OPENROUTER_API_KEY,
+    ahamai: "ahamaibyprakash25", // Default API key for AhamAI
   }
 
   return envKeyMap[provider] || null

@@ -1,4 +1,5 @@
 import Anthropic from "@/components/icons/anthropic"
+import AhamAI from "@/components/icons/ahamai"
 import Claude from "@/components/icons/claude"
 import DeepSeek from "@/components/icons/deepseek"
 import Gemini from "@/components/icons/gemini"
@@ -69,6 +70,11 @@ export const PROVIDERS: Provider[] = [
     id: "anthropic",
     name: "Anthropic",
     icon: Anthropic,
+  },
+  {
+    id: "ahamai",
+    name: "AhamAI",
+    icon: AhamAI,
   },
   {
     id: "ollama",

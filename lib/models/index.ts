@@ -1,4 +1,5 @@
 import { FREE_MODELS_IDS } from "../config"
+import { ahamaiModels, getAhamAIModels } from "./data/ahamai"
 import { claudeModels } from "./data/claude"
 import { deepseekModels } from "./data/deepseek"
 import { geminiModels } from "./data/gemini"
@@ -19,6 +20,7 @@ const STATIC_MODELS: ModelConfig[] = [
   ...grokModels,
   ...perplexityModels,
   ...geminiModels,
+  ...ahamaiModels, // Add static AhamAI models
   ...ollamaModels, // Static fallback Ollama models
   ...openrouterModels,
 ]
@@ -38,15 +40,16 @@ export async function getAllModels(): Promise<ModelConfig[]> {
   }
 
   try {
-    // Get dynamically detected Ollama models (includes enabled check internally)
+    // Get dynamically detected models
     const detectedOllamaModels = await getOllamaModels()
+    const detectedAhamAIModels = await getAhamAIModels()
 
-    // Combine static models (excluding static Ollama models) with detected ones
-    const staticModelsWithoutOllama = STATIC_MODELS.filter(
-      (model) => model.providerId !== "ollama"
+    // Combine static models (excluding static Ollama and AhamAI models) with detected ones
+    const staticModelsWithoutDynamic = STATIC_MODELS.filter(
+      (model) => model.providerId !== "ollama" && model.providerId !== "ahamai"
     )
 
-    dynamicModelsCache = [...staticModelsWithoutOllama, ...detectedOllamaModels]
+    dynamicModelsCache = [...staticModelsWithoutDynamic, ...detectedOllamaModels, ...detectedAhamAIModels]
 
     lastFetchTime = now
     return dynamicModelsCache

@@ -112,6 +112,9 @@ export type XaiModel =
   | "grok-vision-beta"
   | "grok-beta"
 
+// AhamAI models - using string for dynamic model fetching
+export type AhamAIModel = string
+
 export type OpenRouterModel =
   | "openrouter:deepseek/deepseek-r1:free"
   | "openrouter:anthropic/claude-3.7-sonnet:thinking"
@@ -134,6 +137,7 @@ export type Provider =
   | "google"
   | "anthropic"
   | "xai"
+  | "ahamai"
   | "ollama"
   | "openrouter"
 
@@ -144,5 +148,6 @@ export type SupportedModel =
   | PerplexityModel
   | AnthropicModel
   | XaiModel
+  | AhamAIModel
   | OllamaModel
   | OpenRouterModel

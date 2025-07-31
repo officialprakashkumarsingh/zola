@@ -7,6 +7,7 @@ import type { LanguageModelV1 } from "@ai-sdk/provider"
 import { createXai, xai } from "@ai-sdk/xai"
 import { getProviderForModel } from "./provider-map"
 import type {
+  AhamAIModel,
   AnthropicModel,
   GeminiModel,
   MistralModel,
@@ -24,6 +25,7 @@ type PerplexityProviderSettings = Parameters<typeof perplexity>[0]
 type AnthropicProviderSettings = Parameters<typeof anthropic>[1]
 type XaiProviderSettings = Parameters<typeof xai>[1]
 type OllamaProviderSettings = OpenAIChatSettings // Ollama uses OpenAI-compatible API
+type AhamAIProviderSettings = OpenAIChatSettings // AhamAI uses OpenAI-compatible API
 
 type ModelSettings<T extends SupportedModel> = T extends OpenAIModel
   ? OpenAIChatSettings
@@ -37,9 +39,11 @@ type ModelSettings<T extends SupportedModel> = T extends OpenAIModel
           ? AnthropicProviderSettings
           : T extends XaiModel
             ? XaiProviderSettings
-            : T extends OllamaModel
-              ? OllamaProviderSettings
-              : never
+            : T extends AhamAIModel
+              ? AhamAIProviderSettings
+              : T extends OllamaModel
+                ? OllamaProviderSettings
+                : never
 
 export type OpenProvidersOptions<T extends SupportedModel> = ModelSettings<T>
 
@@ -63,6 +67,15 @@ const createOllamaProvider = () => {
     baseURL: getOllamaBaseURL(),
     apiKey: "ollama", // Ollama doesn't require a real API key
     name: "ollama",
+  })
+}
+
+// Create AhamAI provider instance
+const createAhamAIProvider = (apiKey?: string) => {
+  return createOpenAI({
+    baseURL: "https://ahamai-api.officialprakashkrsingh.workers.dev/v1",
+    apiKey: apiKey || "ahamaibyprakash25",
+    name: "ahamai",
   })
 }
 
@@ -146,6 +159,16 @@ export function openproviders<T extends SupportedModel>(
       return xaiProvider(modelId as XaiModel, settings as XaiProviderSettings)
     }
     return xai(modelId as XaiModel, settings as XaiProviderSettings)
+  }
+
+  if (provider === "ahamai") {
+    const ahamaiProvider = createAhamAIProvider(apiKey)
+    // Strip the "ahamai:" prefix for the actual API call
+    const actualModelId = (modelId as string).replace(/^ahamai:/, '')
+    return ahamaiProvider(
+      actualModelId as AhamAIModel,
+      settings as AhamAIProviderSettings
+    )
   }
 
   if (provider === "ollama") {
