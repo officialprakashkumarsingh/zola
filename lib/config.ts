@@ -6,6 +6,7 @@ import {
   Notepad,
   PaintBrush,
   Sparkle,
+  TreeStructure,
 } from "@phosphor-icons/react/dist/ssr"
 
 export const NON_AUTH_DAILY_MESSAGE_LIMIT = 5
@@ -65,6 +66,22 @@ export const SUGGESTIONS = [
       "Design better CTAs with useful tips",
     ],
     icon: PaintBrush,
+  },
+  {
+    label: "Diagram",
+    highlight: "Create",
+    prompt: `Create`,
+    items: [
+      "Create a class diagram for an e-commerce system using PlantUML",
+      "Create a sequence diagram for user authentication using PlantUML", 
+      "Create an activity diagram for order processing using PlantUML",
+      "Create a component diagram for microservices architecture using PlantUML",
+      "Create a use case diagram for a library management system using PlantUML",
+      "Create a state diagram for order status transitions using PlantUML",
+      "Show me how to create PlantUML diagrams with examples",
+      "Create a flowchart for a software development process using PlantUML",
+    ],
+    icon: TreeStructure,
   },
   {
     label: "Research",
