@@ -5,7 +5,7 @@ import { ArrowsOut, Copy, Download, X } from "@phosphor-icons/react"
 import { useState, useEffect } from "react"
 import { Button } from "../ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog"
-import { toast } from "../ui/toast"
+// import { toast } from "@/components/ui/toast"
 
 export type PlantUMLPreviewProps = {
   plantumlCode: string
@@ -14,27 +14,52 @@ export type PlantUMLPreviewProps = {
   title?: string
 }
 
-// Function to encode PlantUML code for the server using deflate compression
+// Function to encode PlantUML code for the server
 function encodePlantUML(plantumlCode: string): string {
   try {
-    // Simple encoding for PlantUML server
-    // Remove any leading/trailing whitespace and ensure proper format
-    const cleanCode = plantumlCode.trim()
+    // Clean the code and ensure it has proper PlantUML tags
+    let cleanCode = plantumlCode.trim()
     
-    // Use base64 encoding with URL-safe characters
-    const encoded = btoa(unescape(encodeURIComponent(cleanCode)))
-    return encoded.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+    // Ensure the code has @startuml and @enduml tags
+    if (!cleanCode.includes('@startuml')) {
+      cleanCode = '@startuml\n' + cleanCode
+    }
+    if (!cleanCode.includes('@enduml')) {
+      cleanCode = cleanCode + '\n@enduml'
+    }
+    
+    // Simple text-based encoding for PlantUML server
+    // We'll use a simpler approach that works better with the PlantUML server
+    const encoded = encodeURIComponent(cleanCode)
+    return encoded
   } catch (error) {
     console.error('Error encoding PlantUML:', error)
-    // Fallback to simple encoding
-    return btoa(plantumlCode).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+    // Fallback encoding
+    return encodeURIComponent(plantumlCode)
   }
 }
 
-// Generate PlantUML server URL
+// Generate PlantUML server URL using the proxy approach
 function getPlantUMLImageUrl(plantumlCode: string, format: 'svg' | 'png' = 'svg'): string {
-  const encoded = encodePlantUML(plantumlCode)
-  return `https://www.plantuml.com/plantuml/${format}/${encoded}`
+  // Clean the code
+  let cleanCode = plantumlCode.trim()
+  
+  // Ensure proper PlantUML format
+  if (!cleanCode.includes('@startuml')) {
+    cleanCode = '@startuml\n' + cleanCode
+  }
+  if (!cleanCode.includes('@enduml')) {
+    cleanCode = cleanCode + '\n@enduml'
+  }
+  
+  // Use the PlantUML proxy server approach
+  const baseUrl = 'https://www.plantuml.com/plantuml/proxy'
+  const params = new URLSearchParams({
+    cache: 'no',
+    src: cleanCode
+  })
+  
+  return `${baseUrl}?${params.toString()}`
 }
 
 export function PlantUMLPreview({ plantumlCode, isOpen, onClose, title = "PlantUML Diagram" }: PlantUMLPreviewProps) {
@@ -55,17 +80,9 @@ export function PlantUMLPreview({ plantumlCode, isOpen, onClose, title = "PlantU
   const handleCopyCode = async () => {
     try {
       await navigator.clipboard.writeText(plantumlCode)
-      toast({
-        title: "Copied to clipboard",
-        description: "PlantUML code copied successfully",
-        status: "success",
-      })
+      console.log('PlantUML code copied to clipboard')
     } catch (error) {
-      toast({
-        title: "Failed to copy",
-        description: "Could not copy PlantUML code to clipboard",
-        status: "error",
-      })
+      console.error('Failed to copy PlantUML code:', error)
     }
   }
 
