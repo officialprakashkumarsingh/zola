@@ -23,47 +23,14 @@ function CodePreviewPopup({ code, language, isOpen, onClose }: CodePreviewPopupP
     const lowerLang = language.toLowerCase()
 
     switch (lowerLang) {
-      case "html":
-        // Sanitize HTML for basic security
-        const sanitizedCode = code
-          .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '<!-- script removed -->')
-          .replace(/javascript:/gi, '#')
-          .replace(/on\w+\s*=/gi, 'data-removed=')
-        
+            case "html":
+        // Simple HTML code display instead of iframe rendering
         return (
-          <iframe
-            srcDoc={`
-              <!DOCTYPE html>
-              <html>
-                <head>
-                  <meta charset="utf-8">
-                  <meta name="viewport" content="width=device-width, initial-scale=1">
-                  <style>
-                    body { 
-                      margin: 0; 
-                      padding: 16px; 
-                      font-family: system-ui, -apple-system, sans-serif;
-                      background: white;
-                      color: #000;
-                      line-height: 1.6;
-                    }
-                    * { 
-                      box-sizing: border-box; 
-                    }
-                    h1, h2, h3, h4, h5, h6 {
-                      margin-top: 0;
-                    }
-                  </style>
-                </head>
-                <body>
-                  ${sanitizedCode}
-                </body>
-              </html>
-            `}
-            className="h-full w-full border-0"
-            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-            title="HTML Preview"
-          />
+          <div className="h-full w-full overflow-auto">
+            <pre className="p-4 text-sm">
+              <code>{code}</code>
+            </pre>
+          </div>
         )
 
       case "svg":
