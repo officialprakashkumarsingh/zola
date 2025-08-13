@@ -1,7 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { Eye, EyeSlash, Maximize, Minimize } from "@phosphor-icons/react"
+import { Eye, EyeSlash } from "@phosphor-icons/react"
 import { useState } from "react"
 import { Button } from "../ui/button"
 
@@ -18,7 +18,6 @@ function isPreviewableLanguage(language: string): boolean {
 
 function CodePreview({ code, language, className }: CodePreviewProps) {
   const [showPreview, setShowPreview] = useState(false)
-  const [isFullscreen, setIsFullscreen] = useState(false)
 
   if (!isPreviewableLanguage(language)) {
     return null
@@ -178,57 +177,15 @@ function CodePreview({ code, language, className }: CodePreviewProps) {
               </>
             )}
           </Button>
-          {showPreview && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsFullscreen(!isFullscreen)}
-              className="h-7 px-2 text-xs"
-            >
-              {isFullscreen ? (
-                <>
-                  <Minimize className="mr-1 h-3 w-3" />
-                  Minimize
-                </>
-              ) : (
-                <>
-                  <Maximize className="mr-1 h-3 w-3" />
-                  Fullscreen
-                </>
-              )}
-            </Button>
-          )}
+
         </div>
       </div>
 
       {/* Preview Content */}
       {showPreview && (
-        <>
-          {isFullscreen && (
-            <div className="bg-background/95 fixed inset-0 z-50 flex flex-col backdrop-blur-sm">
-              <div className="border-border bg-background flex items-center justify-between border-b px-4 py-3">
-                <h2 className="text-lg font-semibold">
-                  {language.toUpperCase()} Preview
-                </h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsFullscreen(false)}
-                >
-                  <Minimize className="mr-1 h-4 w-4" />
-                  Close Fullscreen
-                </Button>
-              </div>
-              <div className="flex-1 overflow-hidden">{renderPreview()}</div>
-            </div>
-          )}
-          
-          {!isFullscreen && (
-            <div className="border-border bg-card h-64 overflow-hidden rounded-b-lg border">
-              {renderPreview()}
-            </div>
-          )}
-        </>
+        <div className="border-border bg-card h-64 overflow-hidden rounded-b-lg border">
+          {renderPreview()}
+        </div>
       )}
     </div>
   )
