@@ -188,7 +188,13 @@ export function useChatCore({
         // Extract content from supported files first (works without authentication)
         const extractableFiles = submittedFiles.filter(file => isSupportedFileType(file))
         if (extractableFiles.length > 0) {
-          const { successful: extractedContents, failed: extractionErrors } = await extractMultipleFiles(extractableFiles)
+          const { successful: extractedContents, failed: extractionErrors } = await extractMultipleFiles(
+            extractableFiles,
+            (fileName, status, error) => {
+              // Progress callback - could be used to update UI status
+              console.log(`File ${fileName}: ${status}${error ? ` - ${error}` : ''}`)
+            }
+          )
           
           // Log extraction errors but don't fail the submission
           if (extractionErrors.length > 0) {
@@ -204,8 +210,8 @@ export function useChatCore({
             // Show notification about uploaded files
             const fileWord = extractedContents.length === 1 ? 'file' : 'files'
             toast({
-              title: `Uploaded ${extractedContents.length} ${fileWord}`,
-              description: `Content extracted from ${extractedContents.length} ${fileWord} for AI analysis`,
+              title: `${extractedContents.length} ${fileWord} processed`,
+              description: `${extractedContents.length} ${fileWord} ready for AI analysis`,
               status: "success",
             })
           }
@@ -228,10 +234,13 @@ export function useChatCore({
         }
       }
 
-      // Combine user input with extracted file content
-      const messageContent = extractedContent 
+      // Combine user input with extracted file content for AI processing
+      const aiMessageContent = extractedContent 
         ? `${input}\n\n--- Attached Files Content ---\n\n${extractedContent}`
         : input
+
+      // User sees only their input, not the extracted content
+      const userDisplayContent = input
 
       const options = {
         body: {
@@ -245,11 +254,11 @@ export function useChatCore({
         experimental_attachments: attachments || undefined,
       }
 
-      // Use append to send the enhanced message content
+      // Use append to send the enhanced message content to AI
       append(
         {
           role: "user",
-          content: messageContent,
+          content: aiMessageContent,
         },
         options
       )

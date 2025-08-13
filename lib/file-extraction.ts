@@ -190,42 +190,91 @@ async function extractTextContent(file: File, fileType: string): Promise<FileExt
   }
 }
 
-// Extract content from PDF files (basic implementation)
+// Extract content from PDF files (improved implementation)
 async function extractPDFContent(file: File): Promise<FileExtractionResult> {
   try {
-    // Note: This is a basic implementation. For production, you'd want to use a proper PDF parser
-    // like pdf-parse or PDF.js for better text extraction
-    
     const arrayBuffer = await file.arrayBuffer()
     const uint8Array = new Uint8Array(arrayBuffer)
+    const decoder = new TextDecoder('latin1', { fatal: false })
     
-    // Basic PDF text extraction (very limited)
-    let text = ''
-    const decoder = new TextDecoder('utf-8', { fatal: false })
+    // Convert to string for pattern matching
+    const pdfString = decoder.decode(uint8Array)
     
-    // Try to extract readable text from PDF
-    for (let i = 0; i < uint8Array.length - 10; i++) {
-      const chunk = uint8Array.slice(i, i + 100)
-      const decoded = decoder.decode(chunk)
-      
-      // Look for text patterns in PDF
-      const textMatch = decoded.match(/[a-zA-Z0-9\s.,!?;:'"()-]{10,}/g)
-      if (textMatch) {
-        text += textMatch.join(' ') + ' '
+    // Check if it's a valid PDF
+    if (!pdfString.startsWith('%PDF-')) {
+      return {
+        success: false,
+        error: 'Invalid PDF file format'
       }
     }
     
-    // Clean up extracted text
-    text = text
+    let extractedText = ''
+    
+    // Method 1: Look for stream objects with text content
+    const streamPattern = /stream[\r\n]+([\s\S]*?)[\r\n]+endstream/g
+    let streamMatch
+    
+    while ((streamMatch = streamPattern.exec(pdfString)) !== null) {
+      const streamContent = streamMatch[1]
+      
+      // Try to decode simple text streams (uncompressed)
+      if (!streamContent.includes('FlateDecode') && !streamContent.includes('ASCIIHexDecode')) {
+        // Look for text showing commands like (Hello) Tj or [(Hello)] TJ
+        const textPattern = /\(([^)]+)\)\s*(?:Tj|TJ)/g
+        let textMatch
+        while ((textMatch = textPattern.exec(streamContent)) !== null) {
+          extractedText += textMatch[1] + ' '
+        }
+        
+        // Look for array-based text commands like [(Hello) (World)] TJ
+        const arrayTextPattern = /\[([^\]]+)\]\s*TJ/g
+        let arrayMatch
+        while ((arrayMatch = arrayTextPattern.exec(streamContent)) !== null) {
+          const arrayContent = arrayMatch[1]
+          const textInParens = /\(([^)]+)\)/g
+          let parenMatch
+          while ((parenMatch = textInParens.exec(arrayContent)) !== null) {
+            extractedText += parenMatch[1] + ' '
+          }
+        }
+      }
+    }
+    
+    // Method 2: Look for text in PDF objects more broadly
+    if (extractedText.length < 50) {
+      const textObjectPattern = /\(([^)]{3,})\)/g
+      let textMatch
+      
+      while ((textMatch = textObjectPattern.exec(pdfString)) !== null) {
+        const text = textMatch[1]
+        // Filter out likely non-text content
+        if (/^[a-zA-Z0-9\s.,!?;:'"()-]+$/.test(text) && text.length > 3) {
+          extractedText += text + ' '
+        }
+      }
+    }
+    
+    // Clean up the extracted text
+    extractedText = extractedText
+      .replace(/\\n/g, '\n')
+      .replace(/\\r/g, '\r')
+      .replace(/\\t/g, '\t')
+      .replace(/\\\\/g, '\\')
+      .replace(/\\\(/g, '(')
+      .replace(/\\\)/g, ')')
       .replace(/\s+/g, ' ')
-      .replace(/[^\w\s.,!?;:'"()-]/g, '')
       .trim()
     
-    if (text.length < 50) {
+    if (extractedText.length < 20) {
       return {
         success: false,
-        error: 'Could not extract readable text from PDF. The PDF might be image-based or encrypted.'
+        error: 'Could not extract readable text from PDF. The PDF might be image-based, encrypted, or use unsupported compression.'
       }
+    }
+    
+    // Limit content length for performance
+    if (extractedText.length > 10000) {
+      extractedText = extractedText.substring(0, 10000) + '\n... (content truncated for performance)'
     }
     
     return {
@@ -233,9 +282,9 @@ async function extractPDFContent(file: File): Promise<FileExtractionResult> {
       content: {
         fileName: file.name,
         fileType: 'pdf',
-        content: text,
+        content: extractedText,
         originalSize: file.size,
-        extractedSize: text.length
+        extractedSize: extractedText.length
       }
     }
   } catch (error) {
@@ -439,7 +488,10 @@ export function formatContentForAI(extractedContent: ExtractedFileContent): stri
 }
 
 // Batch process multiple files (parallel processing for speed)
-export async function extractMultipleFiles(files: File[]): Promise<{
+export async function extractMultipleFiles(
+  files: File[], 
+  onProgress?: (fileName: string, status: 'processing' | 'completed' | 'failed', error?: string) => void
+): Promise<{
   successful: ExtractedFileContent[]
   failed: Array<{ fileName: string; error: string }>
 }> {
@@ -448,7 +500,11 @@ export async function extractMultipleFiles(files: File[]): Promise<{
   
   // Process files in parallel for better performance
   const promises = files.map(async (file) => {
+    // Notify start of processing
+    onProgress?.(file.name, 'processing')
+    
     if (!isSupportedFileType(file)) {
+      onProgress?.(file.name, 'failed', 'File type not supported for content extraction')
       return {
         type: 'failed' as const,
         fileName: file.name,
@@ -460,11 +516,13 @@ export async function extractMultipleFiles(files: File[]): Promise<{
       const result = await extractFileContent(file)
       
       if (result.success && result.content) {
+        onProgress?.(file.name, 'completed')
         return {
           type: 'success' as const,
           content: result.content
         }
       } else {
+        onProgress?.(file.name, 'failed', result.error)
         return {
           type: 'failed' as const,
           fileName: file.name,
@@ -472,10 +530,12 @@ export async function extractMultipleFiles(files: File[]): Promise<{
         }
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      onProgress?.(file.name, 'failed', errorMessage)
       return {
         type: 'failed' as const,
         fileName: file.name,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: errorMessage
       }
     }
   })

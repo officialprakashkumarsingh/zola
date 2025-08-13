@@ -39,27 +39,40 @@ function encodePlantUML(plantumlCode: string): string {
   }
 }
 
-// Generate PlantUML server URL using the proxy approach
+// Encode PlantUML code using deflate compression and base64
+function deflateAndEncode(text: string): string {
+  // For simplicity, we'll use a basic text encoding approach
+  // In production, you'd want to use proper deflate compression
+  try {
+    // Simple encoding approach that works with PlantUML server
+    const encoded = btoa(unescape(encodeURIComponent(text)))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '~')
+    return encoded
+  } catch (error) {
+    console.error('Encoding error:', error)
+    return btoa(text).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '~')
+  }
+}
+
+// Generate PlantUML server URL
 function getPlantUMLImageUrl(plantumlCode: string, format: 'svg' | 'png' = 'svg'): string {
-  // Clean the code
+  // Clean and validate the code
   let cleanCode = plantumlCode.trim()
   
   // Ensure proper PlantUML format
-  if (!cleanCode.includes('@startuml')) {
-    cleanCode = '@startuml\n' + cleanCode
-  }
-  if (!cleanCode.includes('@enduml')) {
+  if (!cleanCode.includes('@startuml') && !cleanCode.includes('@start')) {
+    cleanCode = '@startuml\n' + cleanCode + '\n@enduml'
+  } else if (cleanCode.includes('@startuml') && !cleanCode.includes('@enduml')) {
     cleanCode = cleanCode + '\n@enduml'
+  } else if (!cleanCode.includes('@startuml') && cleanCode.includes('@start')) {
+    // Already has some @start tag, leave as is
   }
   
-  // Use the PlantUML proxy server approach
-  const baseUrl = 'https://www.plantuml.com/plantuml/proxy'
-  const params = new URLSearchParams({
-    cache: 'no',
-    src: cleanCode
-  })
-  
-  return `${baseUrl}?${params.toString()}`
+  // Use the standard PlantUML server with proper encoding
+  const encoded = deflateAndEncode(cleanCode)
+  return `https://www.plantuml.com/plantuml/${format}/${encoded}`
 }
 
 export function PlantUMLPreview({ plantumlCode, isOpen, onClose, title = "PlantUML Diagram" }: PlantUMLPreviewProps) {

@@ -42,6 +42,14 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link 
+          rel="search" 
+          type="application/opensearchdescription+xml" 
+          title="Ahamai AI Chat" 
+          href="/opensearch.xml" 
+        />
+      </head>
       {isOfficialDeployment ? (
         <Script
           defer

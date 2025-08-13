@@ -4,13 +4,17 @@ import { MultiChat } from "@/app/components/multi-chat/multi-chat"
 import { useUserPreferences } from "@/lib/user-preference-store/provider"
 import { Chat } from "./chat"
 
-export function ChatContainer() {
+interface ChatContainerProps {
+  initialQuery?: string
+}
+
+export function ChatContainer({ initialQuery }: ChatContainerProps) {
   const { preferences } = useUserPreferences()
   const multiModelEnabled = preferences.multiModelEnabled
 
   if (multiModelEnabled) {
-    return <MultiChat />
+    return <MultiChat initialQuery={initialQuery} />
   }
 
-  return <Chat />
+  return <Chat initialQuery={initialQuery} />
 }
