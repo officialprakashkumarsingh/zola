@@ -12,9 +12,13 @@ export function ChatContainer({ initialQuery }: ChatContainerProps) {
   const { preferences } = useUserPreferences()
   const multiModelEnabled = preferences.multiModelEnabled
 
+  // TODO: Implement initialQuery handling in Chat and MultiChat components
+  // For now, just render the components without passing the prop
+  // The search functionality will be implemented in a future update
+
   if (multiModelEnabled) {
-    return <MultiChat initialQuery={initialQuery} />
+    return <MultiChat />
   }
 
-  return <Chat initialQuery={initialQuery} />
+  return <Chat />
 }
