@@ -35,7 +35,12 @@ export const useFileUpload = () => {
     }
   }
 
-  const createOptimisticAttachments = (files: File[]) => {
+  const createOptimisticAttachments = (files: File[], isAuthenticated: boolean = true) => {
+    // For non-authenticated users, don't create blob URLs as they can't be sent to AI
+    if (!isAuthenticated) {
+      return []
+    }
+    
     return files.map((file) => ({
       name: file.name,
       contentType: file.type,

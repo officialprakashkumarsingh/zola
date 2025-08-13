@@ -3,6 +3,11 @@ import { toast } from "@/components/ui/toast"
 import { getOrCreateGuestUserId } from "@/lib/api"
 import { MESSAGE_MAX_LENGTH, SYSTEM_PROMPT_DEFAULT } from "@/lib/config"
 import { Attachment } from "@/lib/file-handling"
+import { 
+  extractMultipleFiles, 
+  formatContentForAI, 
+  isSupportedFileType 
+} from "@/lib/file-extraction"
 import { API_ROUTE_CHAT } from "@/lib/routes"
 import type { UserProfile } from "@/lib/user/types"
 import type { Message } from "@ai-sdk/react"
@@ -18,7 +23,8 @@ type UseChatCoreProps = {
   user: UserProfile | null
   files: File[]
   createOptimisticAttachments: (
-    files: File[]
+    files: File[],
+    isAuthenticated?: boolean
   ) => Array<{ name: string; contentType: string; url: string }>
   setFiles: (files: File[]) => void
   checkLimitsAndNotify: (uid: string) => Promise<boolean>
@@ -133,7 +139,7 @@ export function useChatCore({
 
     const optimisticId = `optimistic-${Date.now().toString()}`
     const optimisticAttachments =
-      files.length > 0 ? createOptimisticAttachments(files) : []
+      files.length > 0 ? createOptimisticAttachments(files, isAuthenticated) : []
 
     const optimisticMessage = {
       id: optimisticId,
@@ -176,16 +182,65 @@ export function useChatCore({
       }
 
       let attachments: Attachment[] | null = []
+      let extractedContent = ""
+      
       if (submittedFiles.length > 0) {
-        attachments = await handleFileUploads(uid, currentChatId)
-        if (attachments === null) {
-          setMessages((prev) => prev.filter((m) => m.id !== optimisticId))
-          cleanupOptimisticAttachments(
-            optimisticMessage.experimental_attachments
+        // Extract content from supported files first (works without authentication)
+        const extractableFiles = submittedFiles.filter(file => isSupportedFileType(file))
+        if (extractableFiles.length > 0) {
+          const { successful: extractedContents, failed: extractionErrors } = await extractMultipleFiles(
+            extractableFiles,
+            (fileName, status, error) => {
+              // Progress callback - could be used to update UI status
+              console.log(`File ${fileName}: ${status}${error ? ` - ${error}` : ''}`)
+            }
           )
-          return
+          
+          // Log extraction errors but don't fail the submission
+          if (extractionErrors.length > 0) {
+            console.warn("File extraction errors:", extractionErrors)
+          }
+          
+          // Format extracted content for AI
+          if (extractedContents.length > 0) {
+            extractedContent = extractedContents
+              .map(content => formatContentForAI(content))
+              .join('\n\n---\n\n')
+            
+            // Show notification about uploaded files
+            const fileWord = extractedContents.length === 1 ? 'file' : 'files'
+            toast({
+              title: `${extractedContents.length} ${fileWord} processed`,
+              description: `${extractedContents.length} ${fileWord} ready for AI analysis`,
+              status: "success",
+            })
+          }
+        }
+
+        // Upload files for attachments (requires authentication)
+        if (isAuthenticated) {
+          attachments = await handleFileUploads(uid, currentChatId)
+          if (attachments === null) {
+            setMessages((prev) => prev.filter((m) => m.id !== optimisticId))
+            cleanupOptimisticAttachments(
+              optimisticMessage.experimental_attachments
+            )
+            return
+          }
+        } else {
+          // For non-authenticated users, don't create attachments for AI processing
+          // The extracted content will be sent as text instead
+          attachments = []
         }
       }
+
+      // Combine user input with extracted file content for AI processing
+      const aiMessageContent = extractedContent 
+        ? `${input}\n\n--- Attached Files Content ---\n\n${extractedContent}`
+        : input
+
+      // User sees only their input, not the extracted content
+      const userDisplayContent = input
 
       const options = {
         body: {
@@ -199,7 +254,14 @@ export function useChatCore({
         experimental_attachments: attachments || undefined,
       }
 
-      handleSubmit(undefined, options)
+      // Use append to send the enhanced message content to AI
+      append(
+        {
+          role: "user",
+          content: aiMessageContent,
+        },
+        options
+      )
       setMessages((prev) => prev.filter((msg) => msg.id !== optimisticId))
       cleanupOptimisticAttachments(optimisticMessage.experimental_attachments)
       cacheAndAddMessage(optimisticMessage)

@@ -6,6 +6,7 @@ import {
   Notepad,
   PaintBrush,
   Sparkle,
+  TreeStructure,
 } from "@phosphor-icons/react/dist/ssr"
 
 export const NON_AUTH_DAILY_MESSAGE_LIMIT = 5
@@ -66,6 +67,17 @@ export const SUGGESTIONS = [
     ],
     icon: PaintBrush,
   },
+          {
+          label: "Diagram",
+          highlight: "Create",
+          prompt: `Create`,
+          items: [
+            "Create a flowchart for user registration process using Mermaid",
+            "Create a sequence diagram for API authentication using Mermaid",
+            "Create a class diagram for a blog system using Mermaid",
+          ],
+          icon: TreeStructure,
+        },
   {
     label: "Research",
     highlight: "Research",
