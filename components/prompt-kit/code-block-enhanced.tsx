@@ -12,7 +12,9 @@ import {
 } from "./code-block"
 import { CodePreviewPopup, isPreviewableLanguage } from "./code-preview-popup"
 import { PlantUMLPreview } from "../diagram/plantuml-preview"
-import { containsPlantUML, formatDiagramType, getDiagramType } from "@/lib/plantuml-utils"
+import { MermaidPreview } from "../diagram/mermaid-preview"
+import { containsPlantUML, formatDiagramType as formatPlantUMLType, getDiagramType as getPlantUMLType } from "@/lib/plantuml-utils"
+import { containsMermaid, formatMermaidType, getMermaidType } from "@/lib/mermaid-utils"
 
 export type CodeBlockEnhancedProps = {
   code: string
@@ -25,26 +27,38 @@ export function CodeBlockEnhanced({ code, language, className }: CodeBlockEnhanc
   const [showDiagramPopup, setShowDiagramPopup] = useState(false)
   
   const canPreview = isPreviewableLanguage(language)
-  const isPlantUMLCode = containsPlantUML(code)
-  const diagramType = isPlantUMLCode ? getDiagramType(code) : ''
+  
+  // Check for diagram types (Mermaid takes priority over PlantUML)
+  const isMermaidCode = containsMermaid(code)
+  const isPlantUMLCode = !isMermaidCode && containsPlantUML(code)
+  const isDiagramCode = isMermaidCode || isPlantUMLCode
+  
+  // Get diagram info
+  const mermaidType = isMermaidCode ? getMermaidType(code) : ''
+  const plantumlType = isPlantUMLCode ? getPlantUMLType(code) : ''
+  const diagramLabel = isMermaidCode 
+    ? formatMermaidType(mermaidType)
+    : isPlantUMLCode 
+      ? formatPlantUMLType(plantumlType)
+      : language
 
   return (
     <div>
       <CodeBlock className={className}>
         <CodeBlockGroup className="flex h-9 items-center justify-between px-4">
           <div className="text-muted-foreground py-1 pr-2 font-mono text-xs">
-            {isPlantUMLCode ? formatDiagramType(diagramType) : language}
+            {diagramLabel}
           </div>
         </CodeBlockGroup>
         <div className="sticky top-16 lg:top-0">
           <div className="absolute right-0 bottom-0 flex h-9 items-center gap-1 pr-1.5">
-            {isPlantUMLCode && (
+            {isDiagramCode && (
               <ButtonDiagram
                 onToggle={() => setShowDiagramPopup(true)}
-                diagramType={formatDiagramType(diagramType)}
+                diagramType={isMermaidCode ? formatMermaidType(mermaidType) : formatPlantUMLType(plantumlType)}
               />
             )}
-            {canPreview && !isPlantUMLCode && (
+            {canPreview && !isDiagramCode && (
               <ButtonPreview
                 language={language}
                 onToggle={() => setShowPreviewPopup(true)}
@@ -57,7 +71,7 @@ export function CodeBlockEnhanced({ code, language, className }: CodeBlockEnhanc
         <CodeBlockCode code={code} language={language} />
       </CodeBlock>
       
-      {canPreview && !isPlantUMLCode && (
+      {canPreview && !isDiagramCode && (
         <CodePreviewPopup
           code={code}
           language={language}
@@ -66,12 +80,21 @@ export function CodeBlockEnhanced({ code, language, className }: CodeBlockEnhanc
         />
       )}
       
+      {isMermaidCode && (
+        <MermaidPreview
+          mermaidCode={code}
+          isOpen={showDiagramPopup}
+          onClose={() => setShowDiagramPopup(false)}
+          title={formatMermaidType(mermaidType)}
+        />
+      )}
+      
       {isPlantUMLCode && (
         <PlantUMLPreview
           plantumlCode={code}
           isOpen={showDiagramPopup}
           onClose={() => setShowDiagramPopup(false)}
-          title={formatDiagramType(diagramType)}
+          title={formatPlantUMLType(plantumlType)}
         />
       )}
     </div>

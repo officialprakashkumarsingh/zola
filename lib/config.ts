@@ -72,9 +72,9 @@ export const SUGGESTIONS = [
           highlight: "Create",
           prompt: `Create`,
           items: [
-            "Create a class diagram for an e-commerce system using PlantUML",
-            "Create a sequence diagram for user authentication using PlantUML",
-            "Create a flowchart for a software development process using PlantUML",
+            "Create a flowchart for user registration process using Mermaid",
+            "Create a sequence diagram for API authentication using Mermaid",
+            "Create a class diagram for a blog system using Mermaid",
           ],
           icon: TreeStructure,
         },
