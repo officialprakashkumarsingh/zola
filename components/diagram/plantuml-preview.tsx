@@ -5,7 +5,7 @@ import { ArrowsOut, Copy, Download, X } from "@phosphor-icons/react"
 import { useState, useEffect } from "react"
 import { Button } from "../ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog"
-// import { toast } from "@/components/ui/toast"
+import { toast } from "@/components/ui/toast"
 
 export type PlantUMLPreviewProps = {
   plantumlCode: string
@@ -80,9 +80,17 @@ export function PlantUMLPreview({ plantumlCode, isOpen, onClose, title = "PlantU
   const handleCopyCode = async () => {
     try {
       await navigator.clipboard.writeText(plantumlCode)
-      console.log('PlantUML code copied to clipboard')
+      toast({
+        title: "Copied to clipboard",
+        description: "PlantUML code copied successfully",
+        status: "success",
+      })
     } catch (error) {
-      console.error('Failed to copy PlantUML code:', error)
+      toast({
+        title: "Failed to copy",
+        description: "Could not copy PlantUML code to clipboard",
+        status: "error",
+      })
     }
   }
 
