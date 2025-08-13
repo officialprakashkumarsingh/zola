@@ -5,12 +5,7 @@ import { memo, useId, useMemo } from "react"
 import ReactMarkdown, { Components } from "react-markdown"
 import remarkBreaks from "remark-breaks"
 import remarkGfm from "remark-gfm"
-import { ButtonCopy } from "../common/button-copy"
-import {
-  CodeBlock,
-  CodeBlockCode,
-  CodeBlockGroup,
-} from "../prompt-kit/code-block"
+import { CodeBlockEnhanced } from "../prompt-kit/code-block-enhanced"
 
 export type MarkdownProps = {
   children: string
@@ -51,21 +46,14 @@ const INITIAL_COMPONENTS: Partial<Components> = {
     }
 
     const language = extractLanguage(className)
+    const code = children as string
 
     return (
-      <CodeBlock className={className}>
-        <CodeBlockGroup className="flex h-9 items-center justify-between px-4">
-          <div className="text-muted-foreground py-1 pr-2 font-mono text-xs">
-            {language}
-          </div>
-        </CodeBlockGroup>
-        <div className="sticky top-16 lg:top-0">
-          <div className="absolute right-0 bottom-0 flex h-9 items-center pr-1.5">
-            <ButtonCopy code={children as string} />
-          </div>
-        </div>
-        <CodeBlockCode code={children as string} language={language} />
-      </CodeBlock>
+      <CodeBlockEnhanced 
+        code={code} 
+        language={language} 
+        className={className}
+      />
     )
   },
   a: function AComponent({ href, children, ...props }) {
