@@ -11,9 +11,7 @@ import {
   CodeBlockGroup,
 } from "./code-block"
 import { CodePreviewPopup, isPreviewableLanguage } from "./code-preview-popup"
-import { PlantUMLPreview } from "../diagram/plantuml-preview"
 import { MermaidPreview } from "../diagram/mermaid-preview"
-import { containsPlantUML, formatDiagramType as formatPlantUMLType, getDiagramType as getPlantUMLType } from "@/lib/plantuml-utils"
 import { containsMermaid, formatMermaidType, getMermaidType } from "@/lib/mermaid-utils"
 
 export type CodeBlockEnhancedProps = {
@@ -28,19 +26,15 @@ export function CodeBlockEnhanced({ code, language, className }: CodeBlockEnhanc
   
   const canPreview = isPreviewableLanguage(language)
   
-  // Check for diagram types (Mermaid takes priority over PlantUML)
+  // Check for Mermaid diagrams only
   const isMermaidCode = containsMermaid(code)
-  const isPlantUMLCode = !isMermaidCode && containsPlantUML(code)
-  const isDiagramCode = isMermaidCode || isPlantUMLCode
+  const isDiagramCode = isMermaidCode
   
   // Get diagram info
   const mermaidType = isMermaidCode ? getMermaidType(code) : ''
-  const plantumlType = isPlantUMLCode ? getPlantUMLType(code) : ''
   const diagramLabel = isMermaidCode 
     ? formatMermaidType(mermaidType)
-    : isPlantUMLCode 
-      ? formatPlantUMLType(plantumlType)
-      : language
+    : language
 
   return (
     <div>
@@ -55,7 +49,7 @@ export function CodeBlockEnhanced({ code, language, className }: CodeBlockEnhanc
             {isDiagramCode && (
               <ButtonDiagram
                 onToggle={() => setShowDiagramPopup(true)}
-                diagramType={isMermaidCode ? formatMermaidType(mermaidType) : formatPlantUMLType(plantumlType)}
+                diagramType={formatMermaidType(mermaidType)}
               />
             )}
             {canPreview && !isDiagramCode && (
@@ -86,15 +80,6 @@ export function CodeBlockEnhanced({ code, language, className }: CodeBlockEnhanc
           isOpen={showDiagramPopup}
           onClose={() => setShowDiagramPopup(false)}
           title={formatMermaidType(mermaidType)}
-        />
-      )}
-      
-      {isPlantUMLCode && (
-        <PlantUMLPreview
-          plantumlCode={code}
-          isOpen={showDiagramPopup}
-          onClose={() => setShowDiagramPopup(false)}
-          title={formatPlantUMLType(plantumlType)}
         />
       )}
     </div>

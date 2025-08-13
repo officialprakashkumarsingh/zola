@@ -25,6 +25,9 @@ export function MermaidPreview({ mermaidCode, isOpen, onClose, title = "Mermaid 
   useEffect(() => {
     const loadMermaid = async () => {
       try {
+        // Only load if we're in the browser
+        if (typeof window === 'undefined') return
+        
         const mermaidModule = await import('mermaid')
         const mermaidInstance = mermaidModule.default
         
@@ -48,18 +51,22 @@ export function MermaidPreview({ mermaidCode, isOpen, onClose, title = "Mermaid 
         })
         
         setMermaid(mermaidInstance)
+        setIsLoading(false)
       } catch (error) {
         console.error('Failed to load Mermaid:', error)
         setHasError(true)
+        setIsLoading(false)
       }
     }
 
-    loadMermaid()
+    // Add a small delay to ensure the component is fully mounted
+    const timer = setTimeout(loadMermaid, 100)
+    return () => clearTimeout(timer)
   }, [])
 
   // Render diagram when mermaid is loaded and dialog is open
   useEffect(() => {
-    if (!mermaid || !isOpen || !containerRef.current) return
+    if (!mermaid || !isOpen || !containerRef.current || typeof window === 'undefined') return
 
     const renderDiagram = async () => {
       setIsLoading(true)
@@ -72,12 +79,17 @@ export function MermaidPreview({ mermaidCode, isOpen, onClose, title = "Mermaid 
         }
 
         // Generate unique ID for this diagram
-        const id = `mermaid-${Date.now()}`
+        const id = `mermaid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        
+        // Basic validation
+        if (!mermaidCode.trim()) {
+          throw new Error('Empty diagram code')
+        }
         
         // Validate and render the diagram
         const { svg } = await mermaid.render(id, mermaidCode)
         
-        if (containerRef.current) {
+        if (containerRef.current && svg) {
           containerRef.current.innerHTML = svg
           
           // Style the generated SVG
@@ -101,6 +113,7 @@ export function MermaidPreview({ mermaidCode, isOpen, onClose, title = "Mermaid 
               <div class="text-center">
                 <p class="font-semibold">Diagram Render Error</p>
                 <p class="text-sm mt-2">Please check your Mermaid syntax</p>
+                <p class="text-xs mt-1 text-gray-500">${error instanceof Error ? error.message : 'Unknown error'}</p>
               </div>
             </div>
           `
@@ -108,7 +121,9 @@ export function MermaidPreview({ mermaidCode, isOpen, onClose, title = "Mermaid 
       }
     }
 
-    renderDiagram()
+    // Add a small delay to prevent race conditions
+    const timer = setTimeout(renderDiagram, 200)
+    return () => clearTimeout(timer)
   }, [mermaid, mermaidCode, isOpen])
 
   const handleCopyCode = async () => {
@@ -131,37 +146,33 @@ export function MermaidPreview({ mermaidCode, isOpen, onClose, title = "Mermaid 
   const handleDownload = () => {
     try {
       const svgElement = containerRef.current?.querySelector('svg')
-      if (!svgElement) return
+      if (!svgElement) {
+        toast({
+          title: "Download failed",
+          description: "No diagram to download",
+          status: "error",
+        })
+        return
+      }
 
-      // Convert SVG to PNG using canvas
-      const canvas = document.createElement('canvas')
-      const ctx = canvas.getContext('2d')
-      const img = new Image()
-      
+      // Simple SVG download (more reliable than canvas conversion)
       const svgData = new XMLSerializer().serializeToString(svgElement)
       const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
       const url = URL.createObjectURL(svgBlob)
       
-      img.onload = () => {
-        canvas.width = img.width
-        canvas.height = img.height
-        ctx?.drawImage(img, 0, 0)
-        
-        canvas.toBlob((blob) => {
-          if (blob) {
-            const link = document.createElement('a')
-            link.href = URL.createObjectURL(blob)
-            link.download = 'mermaid-diagram.png'
-            link.click()
-            URL.revokeObjectURL(link.href)
-          }
-        }, 'image/png')
-        
-        URL.revokeObjectURL(url)
-      }
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'mermaid-diagram.svg'
+      link.click()
+      URL.revokeObjectURL(url)
       
-      img.src = url
+      toast({
+        title: "Download complete",
+        description: "Diagram downloaded as SVG",
+        status: "success",
+      })
     } catch (error) {
+      console.error('Download error:', error)
       toast({
         title: "Download failed",
         description: "Could not download diagram",
