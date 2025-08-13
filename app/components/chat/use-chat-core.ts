@@ -184,17 +184,7 @@ export function useChatCore({
       let extractedContent = ""
       
       if (submittedFiles.length > 0) {
-        // Upload files for attachments
-        attachments = await handleFileUploads(uid, currentChatId)
-        if (attachments === null) {
-          setMessages((prev) => prev.filter((m) => m.id !== optimisticId))
-          cleanupOptimisticAttachments(
-            optimisticMessage.experimental_attachments
-          )
-          return
-        }
-
-        // Extract content from supported files
+        // Extract content from supported files first (works without authentication)
         const extractableFiles = submittedFiles.filter(file => isSupportedFileType(file))
         if (extractableFiles.length > 0) {
           const { successful: extractedContents, failed: extractionErrors } = await extractMultipleFiles(extractableFiles)
@@ -217,6 +207,25 @@ export function useChatCore({
               status: "success",
             })
           }
+        }
+
+        // Upload files for attachments (requires authentication)
+        if (isAuthenticated) {
+          attachments = await handleFileUploads(uid, currentChatId)
+          if (attachments === null) {
+            setMessages((prev) => prev.filter((m) => m.id !== optimisticId))
+            cleanupOptimisticAttachments(
+              optimisticMessage.experimental_attachments
+            )
+            return
+          }
+        } else {
+          // For non-authenticated users, create basic attachments for display
+          attachments = submittedFiles.map(file => ({
+            name: file.name,
+            contentType: file.type,
+            url: URL.createObjectURL(file)
+          }))
         }
       }
 

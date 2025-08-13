@@ -32,43 +32,11 @@ export function ButtonFileUpload({
   isUserAuthenticated,
   model,
 }: ButtonFileUploadProps) {
-  if (!isSupabaseEnabled) {
-    return null
-  }
+  // Always show the attachment button - we support text file extraction for all models
+  const isVisionModel = getModelInfo(model)?.vision
+  const hasSupabase = isSupabaseEnabled
 
-  const isFileUploadAvailable = getModelInfo(model)?.vision
-
-  if (!isFileUploadAvailable) {
-    return (
-      <Popover>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <PopoverTrigger asChild>
-              <Button
-                size="sm"
-                variant="secondary"
-                className="border-border dark:bg-secondary size-9 rounded-full border bg-transparent"
-                type="button"
-                aria-label="Add files"
-              >
-                <Paperclip className="size-4" />
-              </Button>
-            </PopoverTrigger>
-          </TooltipTrigger>
-          <TooltipContent>Add files</TooltipContent>
-        </Tooltip>
-        <PopoverContent className="p-2">
-          <div className="text-secondary-foreground text-sm">
-            This model does not support file uploads.
-            <br />
-            Please select another model.
-          </div>
-        </PopoverContent>
-      </Popover>
-    )
-  }
-
-  if (!isUserAuthenticated) {
+  if (!isUserAuthenticated && hasSupabase) {
     return (
       <Popover>
         <Tooltip>
@@ -92,6 +60,49 @@ export function ButtonFileUpload({
     )
   }
 
+  // Show different behavior based on configuration
+  if (!hasSupabase) {
+    // No Supabase - show basic file input that works client-side only
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div>
+            <input
+              type="file"
+              multiple
+              accept=".txt,.md,.json,.xml,.csv,.html,.htm,.css,.scss,.sass,.less,.js,.jsx,.ts,.tsx,.py,.java,.c,.cpp,.h,.hpp,.cs,.php,.rb,.go,.rs,.swift,.kt,.scala,.r,.sql,.sh,.bash,.zsh,.ps1,.yml,.yaml,.toml,.ini,.conf,.config,.env,.log,.pdf,.zip,.tar,.gz,.rar,.7z,image/jpeg,image/png,image/gif,image/webp,image/svg,image/heic,image/heif"
+              onChange={(e) => {
+                const files = Array.from(e.target.files || [])
+                if (files.length > 0) {
+                  onFileUpload(files)
+                  e.target.value = '' // Reset input
+                }
+              }}
+              style={{ display: 'none' }}
+              id="file-upload-input"
+            />
+            <label htmlFor="file-upload-input">
+              <Button
+                size="sm"
+                variant="secondary"
+                className="border-border dark:bg-secondary size-9 rounded-full border bg-transparent cursor-pointer"
+                type="button"
+                aria-label="Add files"
+                asChild
+              >
+                <div>
+                  <Paperclip className="size-4" />
+                </div>
+              </Button>
+            </label>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>Add files - content will be extracted for AI analysis</TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  // With Supabase - use the full FileUpload component
   return (
     <FileUpload
       onFilesAdded={onFileUpload}
@@ -117,14 +128,14 @@ export function ButtonFileUpload({
             </Button>
           </FileUploadTrigger>
         </TooltipTrigger>
-        <TooltipContent>Add files</TooltipContent>
+        <TooltipContent>Add files - {isVisionModel ? 'supports images and' : ''} content extraction for AI analysis</TooltipContent>
       </Tooltip>
       <FileUploadContent>
         <div className="border-input bg-background flex flex-col items-center rounded-lg border border-dashed p-8">
           <FileArrowUp className="text-muted-foreground size-8" />
           <span className="mt-4 mb-1 text-lg font-medium">Drop files here</span>
           <span className="text-muted-foreground text-sm">
-            Drop files here - supports code, text, PDF, ZIP, and images
+            Drop files here - supports code, text, PDF, ZIP{isVisionModel ? ', and images' : ''}
           </span>
         </div>
       </FileUploadContent>

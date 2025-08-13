@@ -215,6 +215,15 @@ export async function processFiles(
       attachments.push(createAttachment(file, url))
     } catch (error) {
       console.error(`Error processing file ${file.name}:`, error)
+      // For client-side only, still create attachment with object URL
+      if (!supabase) {
+        try {
+          const url = URL.createObjectURL(file)
+          attachments.push(createAttachment(file, url))
+        } catch (objectUrlError) {
+          console.error(`Failed to create object URL for ${file.name}:`, objectUrlError)
+        }
+      }
     }
   }
 
