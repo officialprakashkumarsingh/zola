@@ -6,6 +6,11 @@ import { useState } from "react"
 import { Button } from "../ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog"
 
+export function isPreviewableLanguage(language: string): boolean {
+  const previewableLanguages = ["html", "svg", "json"]
+  return previewableLanguages.includes(language.toLowerCase())
+}
+
 export type CodePreviewPopupProps = {
   code: string
   language: string

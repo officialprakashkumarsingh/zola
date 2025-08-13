@@ -9,8 +9,7 @@ import {
   CodeBlockCode,
   CodeBlockGroup,
 } from "./code-block"
-import { CodePreviewPopup } from "./code-preview-popup"
-import { isPreviewableLanguage } from "./code-preview"
+import { CodePreviewPopup, isPreviewableLanguage } from "./code-preview-popup"
 
 export type CodeBlockEnhancedProps = {
   code: string
