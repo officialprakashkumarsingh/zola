@@ -249,43 +249,58 @@ async function extractPDFContent(file: File): Promise<FileExtractionResult> {
 // Extract content from ZIP files
 async function extractZipContent(file: File): Promise<FileExtractionResult> {
   try {
-    // Note: This is a basic implementation. For production, you'd want to use a proper ZIP library
-    // like JSZip for better ZIP file handling
-    
     const arrayBuffer = await file.arrayBuffer()
-    
-    // Basic ZIP inspection - this is very limited
-    // In a real implementation, you'd use JSZip or similar library
-    
     const uint8Array = new Uint8Array(arrayBuffer)
-    const decoder = new TextDecoder('utf-8', { fatal: false })
     
-    let extractedFiles: string[] = []
-    let totalContent = ''
+    // Improved ZIP parser with proper central directory reading
+    const files = parseZipFile(uint8Array)
     
-    // Very basic ZIP file listing (this won't work for all ZIP files)
-    for (let i = 0; i < uint8Array.length - 30; i++) {
-      // Look for ZIP file header signatures
-      if (uint8Array[i] === 0x50 && uint8Array[i + 1] === 0x4B) {
-        const chunk = uint8Array.slice(i, i + 1000)
-        const decoded = decoder.decode(chunk)
-        
-        // Try to extract filenames and readable content
-        const matches = decoded.match(/[\w.-]+\.(txt|md|json|html|css|js|py|java|cpp|cs)/g)
-        if (matches) {
-          extractedFiles.push(...matches)
-        }
-      }
-    }
-    
-    if (extractedFiles.length === 0) {
+    if (files.length === 0) {
       return {
         success: false,
-        error: 'Could not extract file list from ZIP archive. Please extract files manually and upload them individually.'
+        error: 'Could not read ZIP file structure. The file might be corrupted or use an unsupported compression method.'
       }
     }
     
-    totalContent = `ZIP Archive Contents:\n\nDetected files:\n${extractedFiles.map(f => `- ${f}`).join('\n')}\n\nNote: This is a basic ZIP file analysis. For full content extraction, please extract the files manually and upload them individually.`
+    let totalContent = `ZIP Archive: ${file.name}\n`
+    totalContent += `Total files: ${files.length}\n\n`
+    
+    const textFiles: string[] = []
+    const otherFiles: string[] = []
+    
+    // Categorize files and extract text content where possible
+    for (const zipFile of files) {
+      if (isTextFile(zipFile.name)) {
+        textFiles.push(zipFile.name)
+        // Try to extract content for small text files
+        if (zipFile.uncompressedSize < 50000) { // Limit to 50KB for performance
+          try {
+            const content = extractFileFromZip(uint8Array, zipFile)
+            if (content && content.length > 0) {
+              totalContent += `\n--- File: ${zipFile.name} ---\n`
+              totalContent += content.substring(0, 2000) // Limit content length
+              if (content.length > 2000) {
+                totalContent += `\n... (truncated, ${content.length} total characters)`
+              }
+              totalContent += '\n'
+            }
+          } catch (e) {
+            // Skip files that can't be extracted
+          }
+        }
+      } else {
+        otherFiles.push(zipFile.name)
+      }
+    }
+    
+    // Add file listing
+    if (textFiles.length > 0) {
+      totalContent += `\nText files found:\n${textFiles.map(f => `  - ${f}`).join('\n')}\n`
+    }
+    
+    if (otherFiles.length > 0) {
+      totalContent += `\nOther files:\n${otherFiles.map(f => `  - ${f}`).join('\n')}\n`
+    }
     
     return {
       success: true,
@@ -305,6 +320,115 @@ async function extractZipContent(file: File): Promise<FileExtractionResult> {
   }
 }
 
+// Helper function to parse ZIP file structure
+function parseZipFile(data: Uint8Array): Array<{name: string, offset: number, compressedSize: number, uncompressedSize: number, method: number}> {
+  const files: Array<{name: string, offset: number, compressedSize: number, uncompressedSize: number, method: number}> = []
+  
+  try {
+    // Find End of Central Directory Record
+    let eocdOffset = -1
+    for (let i = data.length - 22; i >= 0; i--) {
+      if (data[i] === 0x50 && data[i + 1] === 0x4B && 
+          data[i + 2] === 0x05 && data[i + 3] === 0x06) {
+        eocdOffset = i
+        break
+      }
+    }
+    
+    if (eocdOffset === -1) return files
+    
+    // Read central directory info
+    const centralDirSize = readUint32LE(data, eocdOffset + 12)
+    const centralDirOffset = readUint32LE(data, eocdOffset + 16)
+    
+    // Parse central directory entries
+    let offset = centralDirOffset
+    while (offset < centralDirOffset + centralDirSize) {
+      if (data[offset] !== 0x50 || data[offset + 1] !== 0x4B ||
+          data[offset + 2] !== 0x01 || data[offset + 3] !== 0x02) {
+        break
+      }
+      
+      const compressedSize = readUint32LE(data, offset + 20)
+      const uncompressedSize = readUint32LE(data, offset + 24)
+      const nameLength = readUint16LE(data, offset + 28)
+      const extraLength = readUint16LE(data, offset + 30)
+      const commentLength = readUint16LE(data, offset + 32)
+      const localHeaderOffset = readUint32LE(data, offset + 42)
+      const compressionMethod = readUint16LE(data, offset + 10)
+      
+      // Extract filename
+      const nameBytes = data.slice(offset + 46, offset + 46 + nameLength)
+      const name = new TextDecoder('utf-8', { fatal: false }).decode(nameBytes)
+      
+      if (name && !name.endsWith('/')) { // Skip directories
+        files.push({
+          name,
+          offset: localHeaderOffset,
+          compressedSize,
+          uncompressedSize,
+          method: compressionMethod
+        })
+      }
+      
+      offset += 46 + nameLength + extraLength + commentLength
+    }
+  } catch (e) {
+    // Return whatever files we managed to parse
+  }
+  
+  return files
+}
+
+// Helper function to check if a file is likely text-based
+function isTextFile(filename: string): boolean {
+  const textExtensions = [
+    '.txt', '.md', '.json', '.xml', '.html', '.htm', '.css', '.js', '.ts', 
+    '.jsx', '.tsx', '.py', '.java', '.c', '.cpp', '.h', '.hpp', '.cs', 
+    '.php', '.rb', '.go', '.rs', '.swift', '.kt', '.scala', '.r', '.sql',
+    '.yml', '.yaml', '.toml', '.ini', '.conf', '.config', '.env', '.log',
+    '.sh', '.bash', '.zsh', '.ps1', '.bat', '.cmd'
+  ]
+  
+  const ext = filename.toLowerCase().substring(filename.lastIndexOf('.'))
+  return textExtensions.includes(ext)
+}
+
+// Helper function to extract a specific file from ZIP
+function extractFileFromZip(data: Uint8Array, file: {name: string, offset: number, compressedSize: number, uncompressedSize: number, method: number}): string | null {
+  try {
+    // Read local file header
+    const localOffset = file.offset
+    if (data[localOffset] !== 0x50 || data[localOffset + 1] !== 0x4B ||
+        data[localOffset + 2] !== 0x03 || data[localOffset + 3] !== 0x04) {
+      return null
+    }
+    
+    const nameLength = readUint16LE(data, localOffset + 26)
+    const extraLength = readUint16LE(data, localOffset + 28)
+    const dataOffset = localOffset + 30 + nameLength + extraLength
+    
+    // Only handle uncompressed files (method 0) for simplicity
+    if (file.method === 0) {
+      const fileData = data.slice(dataOffset, dataOffset + file.uncompressedSize)
+      return new TextDecoder('utf-8', { fatal: false }).decode(fileData)
+    }
+    
+    return null
+  } catch (e) {
+    return null
+  }
+}
+
+// Helper functions to read integers from byte arrays
+function readUint16LE(data: Uint8Array, offset: number): number {
+  return data[offset] | (data[offset + 1] << 8)
+}
+
+function readUint32LE(data: Uint8Array, offset: number): number {
+  return data[offset] | (data[offset + 1] << 8) | (data[offset + 2] << 16) | (data[offset + 3] << 24)
+}
+
 // Format extracted content for AI consumption
 export function formatContentForAI(extractedContent: ExtractedFileContent): string {
   const header = `File: ${extractedContent.fileName} (${extractedContent.fileType})\n`
@@ -314,7 +438,7 @@ export function formatContentForAI(extractedContent: ExtractedFileContent): stri
   return `${header}${metadata}${separator}${extractedContent.content}`
 }
 
-// Batch process multiple files
+// Batch process multiple files (parallel processing for speed)
 export async function extractMultipleFiles(files: File[]): Promise<{
   successful: ExtractedFileContent[]
   failed: Array<{ fileName: string; error: string }>
@@ -322,23 +446,51 @@ export async function extractMultipleFiles(files: File[]): Promise<{
   const successful: ExtractedFileContent[] = []
   const failed: Array<{ fileName: string; error: string }> = []
   
-  for (const file of files) {
+  // Process files in parallel for better performance
+  const promises = files.map(async (file) => {
     if (!isSupportedFileType(file)) {
-      failed.push({
+      return {
+        type: 'failed' as const,
         fileName: file.name,
         error: `File type not supported for content extraction`
-      })
-      continue
+      }
     }
     
-    const result = await extractFileContent(file)
-    
-    if (result.success && result.content) {
+    try {
+      const result = await extractFileContent(file)
+      
+      if (result.success && result.content) {
+        return {
+          type: 'success' as const,
+          content: result.content
+        }
+      } else {
+        return {
+          type: 'failed' as const,
+          fileName: file.name,
+          error: result.error || 'Unknown error'
+        }
+      }
+    } catch (error) {
+      return {
+        type: 'failed' as const,
+        fileName: file.name,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }
+    }
+  })
+  
+  // Wait for all extractions to complete
+  const results = await Promise.all(promises)
+  
+  // Categorize results
+  for (const result of results) {
+    if (result.type === 'success') {
       successful.push(result.content)
     } else {
       failed.push({
-        fileName: file.name,
-        error: result.error || 'Unknown error'
+        fileName: result.fileName,
+        error: result.error
       })
     }
   }

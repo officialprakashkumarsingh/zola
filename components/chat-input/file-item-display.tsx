@@ -6,7 +6,7 @@ import { Button } from "../ui/button"
 export type FileItemDisplayProps = {
   file: File
   onRemove: () => void
-  extractionStatus?: "extracting" | "extracted" | "failed" | "not-supported"
+  extractionStatus?: "extracting" | "extracted" | "failed" | "not-supported" | "ready"
   extractedContentLength?: number
 }
 
@@ -85,7 +85,7 @@ function getFileIcon(extension: string): string {
   return iconMap[extension] || '📄'
 }
 
-function getStatusText(status?: "extracting" | "extracted" | "failed" | "not-supported", contentLength?: number): { text: string; color: string } {
+function getStatusText(status?: "extracting" | "extracted" | "failed" | "not-supported" | "ready", contentLength?: number): { text: string; color: string } {
   switch (status) {
     case "extracting":
       return { text: "Extracting content...", color: "text-blue-600 dark:text-blue-400" }
@@ -98,6 +98,8 @@ function getStatusText(status?: "extracting" | "extracted" | "failed" | "not-sup
       return { text: "Extraction failed", color: "text-red-600 dark:text-red-400" }
     case "not-supported":
       return { text: "Content extraction not available", color: "text-gray-500 dark:text-gray-400" }
+    case "ready":
+      return { text: "Ready to upload", color: "text-blue-600 dark:text-blue-400" }
     default:
       return { text: "Ready for upload", color: "text-gray-600 dark:text-gray-300" }
   }

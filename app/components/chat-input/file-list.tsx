@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "motion/react"
-import { FileItem } from "./file-items"
+import { FileItemDisplay } from "../../../components/chat-input/file-item-display"
 
 type FileListProps = {
   files: File[]
@@ -24,21 +24,20 @@ export function FileList({ files, onFileRemove }: FileListProps) {
           transition={TRANSITION}
           className="overflow-hidden"
         >
-          <div className="flex flex-row overflow-x-auto pl-3">
+          <div className="space-y-2 p-3">
             <AnimatePresence initial={false}>
               {files.map((file) => (
                 <motion.div
                   key={file.name}
-                  initial={{ width: 0 }}
-                  animate={{ width: 180 }}
-                  exit={{ width: 0 }}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
                   transition={TRANSITION}
-                  className="relative shrink-0 overflow-hidden pt-2"
                 >
-                  <FileItem
-                    key={file.name}
+                  <FileItemDisplay
                     file={file}
-                    onRemove={onFileRemove}
+                    onRemove={() => onFileRemove(file)}
+                    extractionStatus="ready"
                   />
                 </motion.div>
               ))}

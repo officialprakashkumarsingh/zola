@@ -23,7 +23,8 @@ type UseChatCoreProps = {
   user: UserProfile | null
   files: File[]
   createOptimisticAttachments: (
-    files: File[]
+    files: File[],
+    isAuthenticated?: boolean
   ) => Array<{ name: string; contentType: string; url: string }>
   setFiles: (files: File[]) => void
   checkLimitsAndNotify: (uid: string) => Promise<boolean>
@@ -138,7 +139,7 @@ export function useChatCore({
 
     const optimisticId = `optimistic-${Date.now().toString()}`
     const optimisticAttachments =
-      files.length > 0 ? createOptimisticAttachments(files) : []
+      files.length > 0 ? createOptimisticAttachments(files, isAuthenticated) : []
 
     const optimisticMessage = {
       id: optimisticId,
@@ -200,10 +201,11 @@ export function useChatCore({
               .map(content => formatContentForAI(content))
               .join('\n\n---\n\n')
             
-            // Show notification about extracted content
+            // Show notification about uploaded files
+            const fileWord = extractedContents.length === 1 ? 'file' : 'files'
             toast({
-              title: "File content extracted",
-              description: `${extractedContents.length} file(s) had content extracted for AI analysis`,
+              title: `Uploaded ${extractedContents.length} ${fileWord}`,
+              description: `Content extracted from ${extractedContents.length} ${fileWord} for AI analysis`,
               status: "success",
             })
           }
@@ -220,12 +222,9 @@ export function useChatCore({
             return
           }
         } else {
-          // For non-authenticated users, create basic attachments for display
-          attachments = submittedFiles.map(file => ({
-            name: file.name,
-            contentType: file.type,
-            url: URL.createObjectURL(file)
-          }))
+          // For non-authenticated users, don't create attachments for AI processing
+          // The extracted content will be sent as text instead
+          attachments = []
         }
       }
 
