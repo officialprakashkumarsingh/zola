@@ -97,7 +97,7 @@ export function ButtonFileUpload({
       onFilesAdded={onFileUpload}
       multiple
       disabled={!isUserAuthenticated}
-      accept=".txt,.md,image/jpeg,image/png,image/gif,image/webp,image/svg,image/heic,image/heif"
+      accept=".txt,.md,.json,.xml,.csv,.html,.htm,.css,.scss,.sass,.less,.js,.jsx,.ts,.tsx,.py,.java,.c,.cpp,.h,.hpp,.cs,.php,.rb,.go,.rs,.swift,.kt,.scala,.r,.sql,.sh,.bash,.zsh,.ps1,.yml,.yaml,.toml,.ini,.conf,.config,.env,.log,.pdf,.zip,.tar,.gz,.rar,.7z,image/jpeg,image/png,image/gif,image/webp,image/svg,image/heic,image/heif"
     >
       <Tooltip>
         <TooltipTrigger asChild>
@@ -124,7 +124,7 @@ export function ButtonFileUpload({
           <FileArrowUp className="text-muted-foreground size-8" />
           <span className="mt-4 mb-1 text-lg font-medium">Drop files here</span>
           <span className="text-muted-foreground text-sm">
-            Drop any files here to add it to the conversation
+            Drop files here - supports code, text, PDF, ZIP, and images
           </span>
         </div>
       </FileUploadContent>

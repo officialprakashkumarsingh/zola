@@ -1,8 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { useCodePreview } from "@/lib/hooks/use-code-preview"
-import React from "react"
+import React, { useState } from "react"
 import { ButtonCopy } from "../common/button-copy"
 import { ButtonPreview } from "../common/button-preview"
 import {
@@ -10,7 +9,8 @@ import {
   CodeBlockCode,
   CodeBlockGroup,
 } from "./code-block"
-import { CodePreview, isPreviewableLanguage } from "./code-preview"
+import { CodePreviewPopup } from "./code-preview-popup"
+import { isPreviewableLanguage } from "./code-preview"
 
 export type CodeBlockEnhancedProps = {
   code: string
@@ -19,10 +19,8 @@ export type CodeBlockEnhancedProps = {
 }
 
 export function CodeBlockEnhanced({ code, language, className }: CodeBlockEnhancedProps) {
-  const { togglePreview, isPreviewVisible, generateCodeId } = useCodePreview()
+  const [showPreviewPopup, setShowPreviewPopup] = useState(false)
   const canPreview = isPreviewableLanguage(language)
-  const codeId = generateCodeId(code, language)
-  const showPreview = isPreviewVisible(codeId)
 
   return (
     <div>
@@ -37,8 +35,8 @@ export function CodeBlockEnhanced({ code, language, className }: CodeBlockEnhanc
             {canPreview && (
               <ButtonPreview
                 language={language}
-                onToggle={() => togglePreview(codeId)}
-                isVisible={showPreview}
+                onToggle={() => setShowPreviewPopup(true)}
+                isVisible={false}
               />
             )}
             <ButtonCopy code={code} />
@@ -46,8 +44,14 @@ export function CodeBlockEnhanced({ code, language, className }: CodeBlockEnhanc
         </div>
         <CodeBlockCode code={code} language={language} />
       </CodeBlock>
-      {canPreview && showPreview && (
-        <CodePreview code={code} language={language} />
+      
+      {canPreview && (
+        <CodePreviewPopup
+          code={code}
+          language={language}
+          isOpen={showPreviewPopup}
+          onClose={() => setShowPreviewPopup(false)}
+        />
       )}
     </div>
   )

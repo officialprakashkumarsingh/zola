@@ -8,16 +8,65 @@ import { isSupabaseEnabled } from "./supabase/config"
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 
 const ALLOWED_FILE_TYPES = [
+  // Images
   "image/jpeg",
   "image/png",
   "image/gif",
+  "image/webp",
+  "image/svg+xml",
+  "image/heic",
+  "image/heif",
+  
+  // Documents
   "application/pdf",
+  
+  // Text files
   "text/plain",
   "text/markdown",
-  "application/json",
+  "text/html",
+  "text/css",
+  "text/javascript",
+  "text/xml",
   "text/csv",
+  
+  // JSON and data
+  "application/json",
+  "application/xml",
+  "text/yaml",
+  "application/yaml",
+  
+  // Archives
+  "application/zip",
+  "application/x-zip-compressed",
+  "application/x-tar",
+  "application/x-gzip",
+  "application/x-rar-compressed",
+  "application/x-7z-compressed",
+  
+  // Code files (most will be detected as text/plain)
+  "application/javascript",
+  "application/typescript",
+  "text/x-python",
+  "text/x-java-source",
+  "text/x-c",
+  "text/x-c++src",
+  "text/x-csharp",
+  "text/x-php",
+  "text/x-ruby",
+  "text/x-go",
+  "text/x-rust",
+  "text/x-swift",
+  "text/x-kotlin",
+  "text/x-scala",
+  "text/x-r",
+  "text/x-sql",
+  "text/x-shellscript",
+  
+  // Office documents
   "application/vnd.ms-excel",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-word",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ]
 
 export type Attachment = {
@@ -36,15 +85,56 @@ export async function validateFile(
     }
   }
 
+  // Get file extension for validation
+  const extension = file.name.toLowerCase().split('.').pop() || ''
+  
+  // Common text-based extensions that should be allowed
+  const textBasedExtensions = [
+    'txt', 'md', 'markdown', 'json', 'xml', 'csv', 'html', 'htm', 'css', 
+    'scss', 'sass', 'less', 'js', 'jsx', 'ts', 'tsx', 'py', 'java', 'c', 
+    'cpp', 'h', 'hpp', 'cs', 'php', 'rb', 'go', 'rs', 'swift', 'kt', 
+    'scala', 'r', 'sql', 'sh', 'bash', 'zsh', 'ps1', 'yml', 'yaml', 
+    'toml', 'ini', 'conf', 'config', 'env', 'log'
+  ]
+
+  // If it's a text-based file by extension, allow it
+  if (textBasedExtensions.includes(extension)) {
+    return { isValid: true }
+  }
+
+  // For other files, check MIME type
   const buffer = await file.arrayBuffer()
   const type = await fileType.fileTypeFromBuffer(
     Buffer.from(buffer.slice(0, 4100))
   )
 
-  if (!type || !ALLOWED_FILE_TYPES.includes(type.mime)) {
+  // If no type detected but file starts with text content, allow it
+  if (!type) {
+    const decoder = new TextDecoder('utf-8', { fatal: false })
+    const sample = decoder.decode(buffer.slice(0, 1000))
+    const isText = /^[\x20-\x7E\s]*$/.test(sample) && sample.length > 0
+    
+    if (isText) {
+      return { isValid: true }
+    }
+    
     return {
       isValid: false,
-      error: "File type not supported or doesn't match its extension",
+      error: "File type could not be determined",
+    }
+  }
+
+  // Check if the detected type is allowed
+  const isAllowed = ALLOWED_FILE_TYPES.includes(type.mime) || 
+    ALLOWED_FILE_TYPES.includes(file.type) ||
+    file.type.startsWith('text/') ||
+    file.type.startsWith('application/json') ||
+    file.type.startsWith('application/xml')
+
+  if (!isAllowed) {
+    return {
+      isValid: false,
+      error: `File type '${type.mime || file.type}' is not supported`,
     }
   }
 

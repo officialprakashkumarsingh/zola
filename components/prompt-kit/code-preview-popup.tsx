@@ -1,28 +1,19 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { Eye, EyeSlash } from "@phosphor-icons/react"
+import { X } from "@phosphor-icons/react"
 import { useState } from "react"
 import { Button } from "../ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog"
 
-export type CodePreviewProps = {
+export type CodePreviewPopupProps = {
   code: string
   language: string
-  className?: string
+  isOpen: boolean
+  onClose: () => void
 }
 
-function isPreviewableLanguage(language: string): boolean {
-  const previewableLanguages = ["html", "svg", "json"]
-  return previewableLanguages.includes(language.toLowerCase())
-}
-
-function CodePreview({ code, language, className }: CodePreviewProps) {
-  const [showPreview, setShowPreview] = useState(false)
-
-  if (!isPreviewableLanguage(language)) {
-    return null
-  }
-
+function CodePreviewPopup({ code, language, isOpen, onClose }: CodePreviewPopupProps) {
   const renderPreview = () => {
     const lowerLang = language.toLowerCase()
 
@@ -147,48 +138,36 @@ function CodePreview({ code, language, className }: CodePreviewProps) {
         }
 
       default:
-        return null
+        return (
+          <div className="flex h-full w-full items-center justify-center p-4">
+            <p className="text-muted-foreground">Preview not available for {language}</p>
+          </div>
+        )
     }
   }
 
   return (
-    <div className={cn("mt-2", className)}>
-      {/* Preview Controls */}
-      <div className="border-border bg-muted/50 flex items-center justify-between rounded-t-lg border border-b-0 px-3 py-2">
-        <span className="text-muted-foreground text-xs font-medium">
-          {language.toUpperCase()} Preview
-        </span>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowPreview(!showPreview)}
-            className="h-7 px-2 text-xs"
-          >
-            {showPreview ? (
-              <>
-                <EyeSlash className="mr-1 h-3 w-3" />
-                Hide
-              </>
-            ) : (
-              <>
-                <Eye className="mr-1 h-3 w-3" />
-                Show
-              </>
-            )}
-          </Button>
-
-        </div>
-      </div>
-
-      {/* Preview Content */}
-      {showPreview && (
-        <div className="border-border bg-card h-64 overflow-hidden rounded-b-lg border">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center justify-between">
+            <span>{language.toUpperCase()} Preview</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="h-6 w-6 p-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </DialogTitle>
+        </DialogHeader>
+        <div className="flex-1 overflow-hidden rounded-md border">
           {renderPreview()}
         </div>
-      )}
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
-export { CodePreview, isPreviewableLanguage }
+export { CodePreviewPopup }
