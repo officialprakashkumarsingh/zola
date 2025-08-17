@@ -7,12 +7,16 @@ import {
 import { useUserPreferences } from "@/lib/user-preference-store/provider"
 import { cn } from "@/lib/utils"
 import type { Message as MessageAISDK } from "@ai-sdk/react"
-import { ArrowClockwise, Check, Copy } from "@phosphor-icons/react"
+import { ArrowClockwise, Check, Copy, SpeakerHigh, Pause, Play, GitBranch } from "@phosphor-icons/react"
+import { useTextToSpeech } from "@/app/hooks/use-text-to-speech"
+import { useConversationBranching } from "@/app/hooks/use-conversation-branching"
+import { useState } from "react"
 import { getSources } from "./get-sources"
 import { Reasoning } from "./reasoning"
 import { SearchImages } from "./search-images"
 import { SourcesList } from "./sources-list"
 import { ToolInvocation } from "./tool-invocation"
+import { ConversationBranches } from "./conversation-branches"
 
 type MessageAssistantProps = {
   children: string
@@ -24,6 +28,7 @@ type MessageAssistantProps = {
   parts?: MessageAISDK["parts"]
   status?: "streaming" | "ready" | "submitted" | "error"
   className?: string
+  messageId?: string // Add messageId prop for branching
 }
 
 export function MessageAssistant({
@@ -36,8 +41,19 @@ export function MessageAssistant({
   parts,
   status,
   className,
+  messageId = `msg-${Date.now()}`, // Default messageId if not provided
 }: MessageAssistantProps) {
   const { preferences } = useUserPreferences()
+  const { isSupported: ttsSupported, isSpeaking, isPaused, speak, pause, resume, stop } = useTextToSpeech()
+  const { 
+    branchingState, 
+    createBranch, 
+    switchToBranch, 
+    deleteBranch, 
+    getBranchesForMessage 
+  } = useConversationBranching()
+  const [isListening, setIsListening] = useState(false)
+  
   const sources = getSources(parts)
   const toolInvocationParts = parts?.filter(
     (part) => part.type === "tool-invocation"
@@ -62,6 +78,42 @@ export function MessageAssistant({
           ? (part.toolInvocation?.result?.content?.[0]?.results ?? [])
           : []
       ) ?? []
+
+  // Get branches for this message
+  const messageBranches = getBranchesForMessage(messageId)
+
+  const handleVoiceToggle = () => {
+    if (!ttsSupported || !children) return
+
+    if (isSpeaking) {
+      if (isPaused) {
+        resume()
+      } else {
+        pause()
+      }
+    } else {
+      // Clean text for speech (remove markdown and special characters)
+      const cleanText = children
+        .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown
+        .replace(/\*(.*?)\*/g, '$1') // Remove italic markdown
+        .replace(/`(.*?)`/g, '$1') // Remove code markdown
+        .replace(/#{1,6}\s/g, '') // Remove headers
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links, keep text
+        .replace(/\n+/g, ' ') // Replace newlines with spaces
+        .replace(/\s+/g, ' ') // Normalize spaces
+        .trim()
+      
+      speak(cleanText)
+      setIsListening(true)
+    }
+  }
+
+  // Reset listening state when speech ends
+  useState(() => {
+    if (!isSpeaking && isListening) {
+      setIsListening(false)
+    }
+  })
 
   return (
     <Message
@@ -126,6 +178,37 @@ export function MessageAssistant({
                 )}
               </button>
             </MessageAction>
+
+            {ttsSupported && children && (
+              <MessageAction
+                tooltip={
+                  isSpeaking 
+                    ? isPaused 
+                      ? "Resume reading" 
+                      : "Pause reading"
+                    : "Listen to response"
+                }
+                side="bottom"
+              >
+                <button
+                  className="hover:bg-accent/60 text-muted-foreground hover:text-foreground flex size-7.5 items-center justify-center rounded-full bg-transparent transition"
+                  aria-label={isSpeaking ? (isPaused ? "Resume reading" : "Pause reading") : "Listen to response"}
+                  onClick={handleVoiceToggle}
+                  type="button"
+                >
+                  {isSpeaking ? (
+                    isPaused ? (
+                      <Play className="size-4" />
+                    ) : (
+                      <Pause className="size-4" />
+                    )
+                  ) : (
+                    <SpeakerHigh className="size-4" />
+                  )}
+                </button>
+              </MessageAction>
+            )}
+
             {isLast ? (
               <MessageAction
                 tooltip="Regenerate"
@@ -143,6 +226,21 @@ export function MessageAssistant({
               </MessageAction>
             ) : null}
           </MessageActions>
+        )}
+
+        {/* Conversation Branches */}
+        {branchingState.branchingEnabled && !isLastStreaming && !contentNullOrEmpty && (
+          <div className="mt-2 border-l-2 border-border pl-4">
+            <ConversationBranches
+              messageId={messageId}
+              branches={messageBranches}
+              onCreateBranch={createBranch}
+              onSwitchBranch={switchToBranch}
+              onDeleteBranch={deleteBranch}
+              currentBranchId={branchingState.currentBranchId}
+              className="opacity-0 transition-opacity group-hover:opacity-100"
+            />
+          </div>
         )}
       </div>
     </Message>

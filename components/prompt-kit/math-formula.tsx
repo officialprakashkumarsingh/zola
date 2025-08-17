@@ -12,6 +12,19 @@ export type MathFormulaProps = {
   type?: "latex" | "chemistry"
 }
 
+// Simple chemistry formula processor
+function processChemistryFormula(formula: string): string {
+  return formula
+    // Convert common chemistry notation to LaTeX
+    .replace(/(\d+)/g, '_{$1}') // Convert numbers to subscripts
+    .replace(/->/g, '\\rightarrow ') // Right arrow for reactions
+    .replace(/<->/g, '\\leftrightarrow ') // Equilibrium arrow
+    .replace(/<-/g, '\\leftarrow ') // Left arrow
+    .replace(/\+/g, ' + ') // Add spaces around plus signs
+    .replace(/\s+/g, ' ') // Clean up multiple spaces
+    .trim()
+}
+
 export function MathFormula({ 
   children, 
   displayMode = false, 
@@ -26,13 +39,13 @@ export function MathFormula({
       try {
         setError(null)
         
-        // Process chemistry formulas with mhchem package syntax
-        let formula = children
+        let formula = children.trim()
+        
         if (type === "chemistry") {
-          // Add \ce{} wrapper for chemistry formulas if not already present
-          if (!formula.startsWith("\\ce{") && !formula.startsWith("\\cee{")) {
-            formula = `\\ce{${formula}}`
-          }
+          // Process chemistry formulas with simple LaTeX formatting
+          formula = processChemistryFormula(formula)
+          // Wrap in math mode for proper rendering
+          formula = `\\mathrm{${formula}}`
         }
 
         katex.render(formula, ref.current, {
@@ -42,9 +55,8 @@ export function MathFormula({
           strict: false,
           trust: true,
           macros: {
-            // Add common chemistry macros
-            "\\ce": "\\mathrm{#1}",
-            "\\cee": "\\mathrm{#1}",
+            // Add common chemistry-like macros
+            "\\chem": "\\mathrm{#1}",
           },
         })
       } catch (err) {

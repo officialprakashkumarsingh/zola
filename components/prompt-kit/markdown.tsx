@@ -52,11 +52,6 @@ const INITIAL_COMPONENTS: Partial<Components> = {
         return <InlineMath>{mathContent}</InlineMath>
       }
       
-      // Check for chemistry formula delimiters
-      if (content.startsWith('\\ce{') && content.endsWith('}')) {
-        return <ChemistryFormula>{content}</ChemistryFormula>
-      }
-      
       // Check for chemistry shorthand (chem: prefix)
       if (content.startsWith('chem:')) {
         const chemContent = content.slice(5).trim()
@@ -139,14 +134,12 @@ const MemoizedMarkdownBlock = memo(
     content: string
     components?: Partial<Components>
   }) {
-    // Process LaTeX delimiters in content
+    // Process LaTeX and chemistry delimiters in content
     const processedContent = content
       // Handle display math with $$ delimiters
       .replace(/\$\$([\s\S]*?)\$\$/g, '```math\n$1\n```')
-      // Handle chemistry formulas with chem: prefix
-      .replace(/chem:\s*([^\s\n]+)/g, '```chemistry\n$1\n```')
-      // Handle chemistry formulas with \ce{} syntax
-      .replace(/\\ce\{([^}]+)\}/g, '```chemistry\n$1\n```')
+      // Handle chemistry formulas with chem: prefix (more permissive)
+      .replace(/chem:\s*([A-Za-z0-9\+\-\>\<\(\)\s]+)/g, '```chemistry\n$1\n```')
 
     return (
       <ReactMarkdown
