@@ -3,33 +3,26 @@ import { tool } from "ai"
 export const imageGenerationTool = tool({
   description: "Generate images from text prompts using AI",
   parameters: {
-    type: "object",
-    properties: {
-      prompt: {
-        type: "string",
-        description: "The text prompt to generate an image from",
-      },
-      size: {
-        type: "string",
-        enum: ["256x256", "512x512", "1024x1024", "1792x1024", "1024x1792"],
-        description: "The size of the generated image",
-        default: "1024x1024",
-      },
-      n: {
-        type: "number",
-        minimum: 1,
-        maximum: 4,
-        description: "Number of images to generate (1-4)",
-        default: 1,
-      },
-      quality: {
-        type: "string",
-        enum: ["low", "medium", "high"],
-        description: "Quality of the generated image",
-        default: "medium",
-      },
+    prompt: {
+      type: "string",
+      description: "The text prompt to generate an image from",
     },
-    required: ["prompt"],
+    size: {
+      type: "string",
+      enum: ["256x256", "512x512", "1024x1024", "1792x1024", "1024x1792"],
+      description: "The size of the generated image",
+    },
+    n: {
+      type: "number",
+      minimum: 1,
+      maximum: 4,
+      description: "Number of images to generate (1-4)",
+    },
+    quality: {
+      type: "string",
+      enum: ["low", "medium", "high"],
+      description: "Quality of the generated image",
+    },
   },
   execute: async ({ prompt, size = "1024x1024", n = 1, quality = "medium" }) => {
     try {
