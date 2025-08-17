@@ -2,6 +2,8 @@ import { Message as MessageType } from "@ai-sdk/react"
 import React, { useState } from "react"
 import { MessageAssistant } from "./message-assistant"
 import { MessageUser } from "./message-user"
+import type { ResponseStyle } from "./modify-response"
+import type { AIModel } from "./multi-model-response"
 
 type MessageProps = {
   variant: MessageType["role"]
@@ -16,6 +18,9 @@ type MessageProps = {
   parts?: MessageType["parts"]
   status?: "streaming" | "ready" | "submitted" | "error"
   className?: string
+  onModifyResponse?: (style: ResponseStyle, originalResponse: string) => Promise<void>
+  onMultiModelRequest?: (models: AIModel[], originalMessage: string) => Promise<void>
+  originalUserMessage?: string
 }
 
 export function Message({
@@ -31,6 +36,9 @@ export function Message({
   parts,
   status,
   className,
+  onModifyResponse,
+  onMultiModelRequest,
+  originalUserMessage,
 }: MessageProps) {
   const [copied, setCopied] = useState(false)
 
@@ -69,6 +77,10 @@ export function Message({
         parts={parts}
         status={status}
         className={className}
+        messageId={id}
+        onModifyResponse={onModifyResponse}
+        onMultiModelRequest={onMultiModelRequest}
+        originalUserMessage={originalUserMessage}
       >
         {children}
       </MessageAssistant>
