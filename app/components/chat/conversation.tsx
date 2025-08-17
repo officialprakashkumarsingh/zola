@@ -8,7 +8,6 @@ import { Message as MessageType } from "@ai-sdk/react"
 import { useRef } from "react"
 import { Message } from "./message"
 import type { ResponseStyle } from "./modify-response"
-import type { AIModel } from "./multi-model-response"
 
 type ConversationProps = {
   messages: MessageType[]
@@ -17,7 +16,6 @@ type ConversationProps = {
   onEdit: (id: string, newText: string) => void
   onReload: () => void
   onModifyResponse?: (style: ResponseStyle, originalResponse: string) => Promise<void>
-  onMultiModelRequest?: (models: AIModel[], originalMessage: string) => Promise<void>
 }
 
 export function Conversation({
@@ -27,7 +25,6 @@ export function Conversation({
   onEdit,
   onReload,
   onModifyResponse,
-  onMultiModelRequest,
 }: ConversationProps) {
   const initialMessageCount = useRef(messages.length)
 
@@ -54,17 +51,6 @@ export function Conversation({
             const hasScrollAnchor =
               isLast && messages.length > initialMessageCount.current
 
-            // Find the previous user message for multi-model context
-            let originalUserMessage = ""
-            if (message.role === "assistant") {
-              for (let i = index - 1; i >= 0; i--) {
-                if (messages[i].role === "user") {
-                  originalUserMessage = messages[i].content
-                  break
-                }
-              }
-            }
-
             return (
               <Message
                 key={message.id}
@@ -79,8 +65,6 @@ export function Conversation({
                 parts={message.parts}
                 status={status}
                 onModifyResponse={onModifyResponse}
-                onMultiModelRequest={onMultiModelRequest}
-                originalUserMessage={originalUserMessage}
               >
                 {message.content}
               </Message>

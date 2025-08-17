@@ -7,18 +7,15 @@ import {
 import { useUserPreferences } from "@/lib/user-preference-store/provider"
 import { cn } from "@/lib/utils"
 import type { Message as MessageAISDK } from "@ai-sdk/react"
-import { ArrowClockwise, Check, Copy, SpeakerHigh, Pause, Play, GitBranch } from "@phosphor-icons/react"
+import { ArrowClockwise, Check, Copy, SpeakerHigh, Pause, Play } from "@phosphor-icons/react"
 import { useTextToSpeech } from "@/app/hooks/use-text-to-speech"
-import { useConversationBranching } from "@/app/hooks/use-conversation-branching"
 import { useState } from "react"
 import { getSources } from "./get-sources"
 import { Reasoning } from "./reasoning"
 import { SearchImages } from "./search-images"
 import { SourcesList } from "./sources-list"
 import { ToolInvocation } from "./tool-invocation"
-import { ConversationBranches } from "./conversation-branches"
 import { ModifyResponse, type ResponseStyle } from "./modify-response"
-import { MultiModelResponse, type AIModel } from "./multi-model-response"
 
 type MessageAssistantProps = {
   children: string
@@ -30,10 +27,8 @@ type MessageAssistantProps = {
   parts?: MessageAISDK["parts"]
   status?: "streaming" | "ready" | "submitted" | "error"
   className?: string
-  messageId?: string // Add messageId prop for branching
+  messageId?: string
   onModifyResponse?: (style: ResponseStyle, originalResponse: string) => Promise<void>
-  onMultiModelRequest?: (models: AIModel[], originalMessage: string) => Promise<void>
-  originalUserMessage?: string // The user message that generated this response
 }
 
 export function MessageAssistant({
@@ -46,23 +41,13 @@ export function MessageAssistant({
   parts,
   status,
   className,
-  messageId = `msg-${Date.now()}`, // Default messageId if not provided
+  messageId = `msg-${Date.now()}`,
   onModifyResponse,
-  onMultiModelRequest,
-  originalUserMessage,
 }: MessageAssistantProps) {
   const { preferences } = useUserPreferences()
   const { isSupported: ttsSupported, isSpeaking, isPaused, speak, pause, resume, stop } = useTextToSpeech()
-  const { 
-    branchingState, 
-    createBranch, 
-    switchToBranch, 
-    deleteBranch, 
-    getBranchesForMessage 
-  } = useConversationBranching()
   const [isListening, setIsListening] = useState(false)
   const [isModifying, setIsModifying] = useState(false)
-  const [isMultiProcessing, setIsMultiProcessing] = useState(false)
   
   const sources = getSources(parts)
   const toolInvocationParts = parts?.filter(
@@ -88,9 +73,6 @@ export function MessageAssistant({
           ? (part.toolInvocation?.result?.content?.[0]?.results ?? [])
           : []
       ) ?? []
-
-  // Get branches for this message
-  const messageBranches = getBranchesForMessage(messageId)
 
   const handleVoiceToggle = () => {
     if (!ttsSupported || !children) return
@@ -126,17 +108,6 @@ export function MessageAssistant({
       await onModifyResponse(style, originalResponse)
     } finally {
       setIsModifying(false)
-    }
-  }
-
-  const handleMultiModelRequest = async (models: AIModel[], originalMessage: string) => {
-    if (!onMultiModelRequest) return
-    
-    setIsMultiProcessing(true)
-    try {
-      await onMultiModelRequest(models, originalMessage)
-    } finally {
-      setIsMultiProcessing(false)
     }
   }
 
@@ -254,19 +225,6 @@ export function MessageAssistant({
               </MessageAction>
             )}
 
-            {onMultiModelRequest && originalUserMessage && (
-              <MessageAction
-                tooltip="Compare with other models"
-                side="bottom"
-              >
-                <MultiModelResponse
-                  originalMessage={originalUserMessage}
-                  onMultiModelRequest={handleMultiModelRequest}
-                  isProcessing={isMultiProcessing}
-                />
-              </MessageAction>
-            )}
-
             {isLast ? (
               <MessageAction
                 tooltip="Regenerate"
@@ -284,24 +242,6 @@ export function MessageAssistant({
               </MessageAction>
             ) : null}
           </MessageActions>
-        )}
-
-        {/* Conversation Branches */}
-        {branchingState.branchingEnabled && !isLastStreaming && !contentNullOrEmpty && (
-          <div className="mt-2 border-l-2 border-border pl-4">
-            <ConversationBranches
-              messageId={messageId}
-              branches={messageBranches}
-              onCreateBranch={(parentId, title, initialMsg) => {
-                console.log('Message Assistant: Creating branch', { parentId, title, initialMsg })
-                createBranch(parentId, title, initialMsg)
-              }}
-              onSwitchBranch={switchToBranch}
-              onDeleteBranch={deleteBranch}
-              currentBranchId={branchingState.currentBranchId}
-              className="transition-opacity"
-            />
-          </div>
         )}
       </div>
     </Message>
