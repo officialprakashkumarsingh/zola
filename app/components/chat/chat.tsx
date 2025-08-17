@@ -106,6 +106,8 @@ export function Chat() {
     handleReload,
     handleInputChange,
     append,
+    isAuthenticated,
+    systemPrompt,
   } = useChatCore({
     initialMessages,
     draftValue,
@@ -138,18 +140,37 @@ export function Chat() {
           const modificationPrompt = `${style.prompt}\n\n"${originalResponse}"`
           console.log('Modifying response with style:', style.name, 'Prompt:', modificationPrompt)
           
-          // Use append to directly send the message
-          await append({
-            role: 'user',
-            content: modificationPrompt,
-          })
+          // Get required user ID and chat ID
+          const uid = await getOrCreateGuestUserId(user)
+          if (!uid) return
+          
+          const currentChatId = await ensureChatExists(uid, modificationPrompt)
+          if (!currentChatId) return
+          
+          // Use append with proper body configuration
+          await append(
+            {
+              role: 'user',
+              content: modificationPrompt,
+            },
+            {
+              body: {
+                chatId: currentChatId,
+                userId: uid,
+                model: selectedModel,
+                isAuthenticated,
+                systemPrompt: systemPrompt || SYSTEM_PROMPT_DEFAULT,
+                enableSearch,
+              }
+            }
+          )
         } catch (error) {
           console.error('Error modifying response:', error)
           throw error
         }
       },
     }),
-    [messages, status, handleDelete, handleEdit, handleReload, handleInputChange, submit, append]
+    [messages, status, handleDelete, handleEdit, handleReload, handleInputChange, submit, append, selectedModel, isAuthenticated, systemPrompt, enableSearch, ensureChatExists, user]
   )
 
   // Memoize the chat input props

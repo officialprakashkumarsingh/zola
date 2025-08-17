@@ -18,7 +18,7 @@ import {
   X,
 } from "@phosphor-icons/react"
 import { useParams, useRouter } from "next/navigation"
-import { useMemo, useState, useEffect } from "react"
+import { useMemo } from "react"
 import { HistoryTrigger } from "../../history/history-trigger"
 import { SidebarList } from "./sidebar-list"
 import { SidebarProject } from "./sidebar-project"
@@ -29,39 +29,11 @@ export function AppSidebar() {
   const { chats, isLoading } = useChats()
   const params = useParams<{ chatId: string }>()
   const currentChatId = params.chatId
-  const [pinnedChatIds, setPinnedChatIds] = useState<string[]>([])
 
-  // Load pinned chats from localStorage and listen for changes
-  useEffect(() => {
-    const loadPinnedChats = () => {
-      const saved = localStorage.getItem('pinnedChats')
-      setPinnedChatIds(saved ? JSON.parse(saved) : [])
-    }
-
-    loadPinnedChats()
-
-    const handlePinnedChatsChanged = (event: CustomEvent) => {
-      setPinnedChatIds(event.detail.pinnedChats)
-    }
-
-    window.addEventListener('pinnedChatsChanged', handlePinnedChatsChanged as EventListener)
-    return () => {
-      window.removeEventListener('pinnedChatsChanged', handlePinnedChatsChanged as EventListener)
-    }
-  }, [])
-
-  const { pinnedChats, unpinnedChats, groupedUnpinnedChats } = useMemo(() => {
-    const pinned = chats.filter(chat => pinnedChatIds.includes(chat.id))
-    const unpinned = chats.filter(chat => !pinnedChatIds.includes(chat.id))
-    const grouped = groupChatsByDate(unpinned, "")
-    
-    return {
-      pinnedChats: pinned,
-      unpinnedChats: unpinned,
-      groupedUnpinnedChats: grouped
-    }
-  }, [chats, pinnedChatIds])
-
+  const groupedChats = useMemo(() => {
+    const result = groupChatsByDate(chats, "")
+    return result
+  }, [chats])
   const hasChats = chats.length > 0
   const router = useRouter()
 
@@ -118,17 +90,7 @@ export function AppSidebar() {
             <div className="h-full" />
           ) : hasChats ? (
             <div className="space-y-5">
-              {/* Pinned Chats */}
-              {pinnedChats.length > 0 && (
-                <SidebarList
-                  title="Pinned"
-                  items={pinnedChats}
-                  currentChatId={currentChatId}
-                />
-              )}
-              
-              {/* Regular Chats */}
-              {groupedUnpinnedChats?.map((group) => (
+              {groupedChats?.map((group) => (
                 <SidebarList
                   key={group.name}
                   title={group.name}

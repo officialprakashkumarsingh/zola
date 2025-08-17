@@ -9,9 +9,9 @@ import { useChats } from "@/lib/chat-store/chats/provider"
 import { useMessages } from "@/lib/chat-store/messages/provider"
 import { useChatSession } from "@/lib/chat-store/session/provider"
 import { Chat } from "@/lib/chat-store/types"
-import { DotsThree, PencilSimple, Trash, PushPin, PushPinSlash } from "@phosphor-icons/react"
+import { DotsThree, PencilSimple, Trash } from "@phosphor-icons/react"
 import { useRouter } from "next/navigation"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { DialogDeleteChat } from "./dialog-delete-chat"
 
 type SidebarItemMenuProps = {
@@ -26,44 +26,15 @@ export function SidebarItemMenu({
   onMenuOpenChange,
 }: SidebarItemMenuProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [isPinned, setIsPinned] = useState(false)
   const router = useRouter()
   const { deleteMessages } = useMessages()
   const { deleteChat } = useChats()
   const { chatId } = useChatSession()
   const isMobile = useBreakpoint(768)
 
-  // Load pinned state from localStorage
-  useEffect(() => {
-    const pinnedChats = JSON.parse(localStorage.getItem('pinnedChats') || '[]')
-    setIsPinned(pinnedChats.includes(chat.id))
-  }, [chat.id])
-
   const handleConfirmDelete = async () => {
     await deleteMessages()
     await deleteChat(chat.id, chatId!, () => router.push("/"))
-  }
-
-  const handleTogglePin = () => {
-    const pinnedChats = JSON.parse(localStorage.getItem('pinnedChats') || '[]')
-    let updatedPinnedChats
-    
-    if (isPinned) {
-      // Unpin
-      updatedPinnedChats = pinnedChats.filter((id: string) => id !== chat.id)
-      setIsPinned(false)
-    } else {
-      // Pin
-      updatedPinnedChats = [...pinnedChats, chat.id]
-      setIsPinned(true)
-    }
-    
-    localStorage.setItem('pinnedChats', JSON.stringify(updatedPinnedChats))
-    
-    // Trigger a custom event to notify other components
-    window.dispatchEvent(new CustomEvent('pinnedChatsChanged', { 
-      detail: { pinnedChats: updatedPinnedChats } 
-    }))
   }
 
   return (
@@ -82,26 +53,6 @@ export function SidebarItemMenu({
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-40">
-          <DropdownMenuItem
-            className="cursor-pointer"
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              handleTogglePin()
-            }}
-          >
-            {isPinned ? (
-              <>
-                <PushPinSlash size={16} className="mr-2" />
-                Unpin
-              </>
-            ) : (
-              <>
-                <PushPin size={16} className="mr-2" />
-                Pin
-              </>
-            )}
-          </DropdownMenuItem>
           <DropdownMenuItem
             className="cursor-pointer"
             onClick={(e) => {
