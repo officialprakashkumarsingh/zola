@@ -234,11 +234,14 @@ export function MessageAssistant({
             <ConversationBranches
               messageId={messageId}
               branches={messageBranches}
-              onCreateBranch={createBranch}
+              onCreateBranch={(parentId, title, initialMsg) => {
+                console.log('Message Assistant: Creating branch', { parentId, title, initialMsg })
+                createBranch(parentId, title, initialMsg)
+              }}
               onSwitchBranch={switchToBranch}
               onDeleteBranch={deleteBranch}
               currentBranchId={branchingState.currentBranchId}
-              className="opacity-0 transition-opacity group-hover:opacity-100"
+              className="opacity-60 transition-opacity group-hover:opacity-100 hover:opacity-100"
             />
           </div>
         )}

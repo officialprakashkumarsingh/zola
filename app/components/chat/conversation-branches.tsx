@@ -49,6 +49,7 @@ export function ConversationBranches({
 
   const handleCreateBranch = () => {
     if (branchTitle.trim()) {
+      console.log('Creating branch:', { messageId, branchTitle: branchTitle.trim(), initialMessage: initialMessage.trim() })
       onCreateBranch(messageId, branchTitle.trim(), initialMessage.trim() || undefined)
       setBranchTitle("")
       setInitialMessage("")
@@ -92,6 +93,8 @@ export function ConversationBranches({
                   placeholder="e.g., Alternative approach, Different topic..."
                   value={branchTitle}
                   onChange={(e) => setBranchTitle(e.target.value)}
+                  className="focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0 focus:ring-offset-0"
+                  autoComplete="off"
                 />
               </div>
               <div>
@@ -102,6 +105,8 @@ export function ConversationBranches({
                   value={initialMessage}
                   onChange={(e) => setInitialMessage(e.target.value)}
                   rows={3}
+                  className="focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0 focus:ring-offset-0"
+                  autoComplete="off"
                 />
               </div>
               <div className="flex justify-end gap-2">
@@ -199,22 +204,26 @@ export function ConversationBranches({
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="branch-title">Branch Title</Label>
+              <Label htmlFor="branch-title-2">Branch Title</Label>
               <Input
-                id="branch-title"
+                id="branch-title-2"
                 placeholder="e.g., Alternative approach, Different topic..."
                 value={branchTitle}
                 onChange={(e) => setBranchTitle(e.target.value)}
+                className="focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0 focus:ring-offset-0"
+                autoComplete="off"
               />
             </div>
             <div>
-              <Label htmlFor="initial-message">Initial Message (Optional)</Label>
+              <Label htmlFor="initial-message-2">Initial Message (Optional)</Label>
               <Textarea
-                id="initial-message"
+                id="initial-message-2"
                 placeholder="Start the branch with a specific message..."
                 value={initialMessage}
                 onChange={(e) => setInitialMessage(e.target.value)}
                 rows={3}
+                className="focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0 focus:ring-offset-0"
+                autoComplete="off"
               />
             </div>
             <div className="flex justify-end gap-2">

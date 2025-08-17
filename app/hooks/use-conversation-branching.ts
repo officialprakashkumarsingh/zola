@@ -31,6 +31,8 @@ export function useConversationBranching() {
 
   const createBranch = useCallback(
     (parentMessageId: string, branchTitle: string, initialUserMessage?: string) => {
+      console.log('useConversationBranching: Creating branch', { parentMessageId, branchTitle, initialUserMessage })
+      
       const newBranch: ConversationBranch = {
         id: `branch-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         parentMessageId,
@@ -49,10 +51,16 @@ export function useConversationBranching() {
         createdAt: Date.now(),
       }
 
-      setBranchingState((prev) => ({
-        ...prev,
-        branches: [...prev.branches, newBranch],
-      }))
+      console.log('useConversationBranching: New branch created', newBranch)
+
+      setBranchingState((prev) => {
+        const newState = {
+          ...prev,
+          branches: [...prev.branches, newBranch],
+        }
+        console.log('useConversationBranching: Updated state', newState)
+        return newState
+      })
 
       return newBranch.id
     },
