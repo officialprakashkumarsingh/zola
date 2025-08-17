@@ -71,20 +71,15 @@ export function Chat() {
 
   // State to pass between hooks
   const [hasDialogAuth, setHasDialogAuth] = useState(false)
-  const isAuthenticated = useMemo(() => !!user?.id, [user?.id])
-  const systemPrompt = useMemo(
-    () => user?.system_prompt || SYSTEM_PROMPT_DEFAULT,
-    [user?.system_prompt]
-  )
 
   // Chat operations (utils + handlers) - created first
   const { checkLimitsAndNotify, ensureChatExists, handleDelete, handleEdit } =
     useChatOperations({
-      isAuthenticated,
+      isAuthenticated: !!user?.id,
       chatId,
       messages: initialMessages,
       selectedModel,
-      systemPrompt,
+      systemPrompt: user?.system_prompt || SYSTEM_PROMPT_DEFAULT,
       createNewChat,
       setHasDialogAuth,
       setMessages: () => {},
