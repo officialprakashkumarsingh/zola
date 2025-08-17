@@ -17,6 +17,8 @@ import { SearchImages } from "./search-images"
 import { SourcesList } from "./sources-list"
 import { ToolInvocation } from "./tool-invocation"
 import { ConversationBranches } from "./conversation-branches"
+import { ModifyResponse, type ResponseStyle } from "./modify-response"
+import { MultiModelResponse, type AIModel } from "./multi-model-response"
 
 type MessageAssistantProps = {
   children: string
@@ -29,6 +31,9 @@ type MessageAssistantProps = {
   status?: "streaming" | "ready" | "submitted" | "error"
   className?: string
   messageId?: string // Add messageId prop for branching
+  onModifyResponse?: (style: ResponseStyle, originalResponse: string) => Promise<void>
+  onMultiModelRequest?: (models: AIModel[], originalMessage: string) => Promise<void>
+  originalUserMessage?: string // The user message that generated this response
 }
 
 export function MessageAssistant({
@@ -42,6 +47,9 @@ export function MessageAssistant({
   status,
   className,
   messageId = `msg-${Date.now()}`, // Default messageId if not provided
+  onModifyResponse,
+  onMultiModelRequest,
+  originalUserMessage,
 }: MessageAssistantProps) {
   const { preferences } = useUserPreferences()
   const { isSupported: ttsSupported, isSpeaking, isPaused, speak, pause, resume, stop } = useTextToSpeech()
@@ -53,6 +61,8 @@ export function MessageAssistant({
     getBranchesForMessage 
   } = useConversationBranching()
   const [isListening, setIsListening] = useState(false)
+  const [isModifying, setIsModifying] = useState(false)
+  const [isMultiProcessing, setIsMultiProcessing] = useState(false)
   
   const sources = getSources(parts)
   const toolInvocationParts = parts?.filter(
@@ -105,6 +115,28 @@ export function MessageAssistant({
       
       speak(cleanText)
       setIsListening(true)
+    }
+  }
+
+  const handleModifyResponse = async (style: ResponseStyle, originalResponse: string) => {
+    if (!onModifyResponse) return
+    
+    setIsModifying(true)
+    try {
+      await onModifyResponse(style, originalResponse)
+    } finally {
+      setIsModifying(false)
+    }
+  }
+
+  const handleMultiModelRequest = async (models: AIModel[], originalMessage: string) => {
+    if (!onMultiModelRequest) return
+    
+    setIsMultiProcessing(true)
+    try {
+      await onMultiModelRequest(models, originalMessage)
+    } finally {
+      setIsMultiProcessing(false)
     }
   }
 
@@ -206,6 +238,32 @@ export function MessageAssistant({
                     <SpeakerHigh className="size-4" />
                   )}
                 </button>
+              </MessageAction>
+            )}
+
+            {onModifyResponse && children && (
+              <MessageAction
+                tooltip="Modify response style"
+                side="bottom"
+              >
+                <ModifyResponse
+                  originalResponse={children}
+                  onModify={handleModifyResponse}
+                  isModifying={isModifying}
+                />
+              </MessageAction>
+            )}
+
+            {onMultiModelRequest && originalUserMessage && (
+              <MessageAction
+                tooltip="Compare with other models"
+                side="bottom"
+              >
+                <MultiModelResponse
+                  originalMessage={originalUserMessage}
+                  onMultiModelRequest={handleMultiModelRequest}
+                  isProcessing={isMultiProcessing}
+                />
               </MessageAction>
             )}
 
