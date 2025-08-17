@@ -82,7 +82,17 @@ export default async function RootLayout({
                           "dark-slate",
                           "dark-forest",
                           "dark-ocean",
-                          "dark-purple"
+                          "dark-purple",
+                          "theme-cyberpunk",
+                          "theme-rose",
+                          "theme-amber",
+                          "theme-mint",
+                          "theme-coral",
+                          "theme-midnight",
+                          "theme-coffee",
+                          "theme-neon",
+                          "theme-vintage",
+                          "theme-arctic"
                         ]}
                       >
                         <SidebarProvider defaultOpen>

@@ -5,12 +5,19 @@ import { memo, useId, useMemo } from "react"
 import ReactMarkdown, { Components } from "react-markdown"
 import remarkBreaks from "remark-breaks"
 import remarkGfm from "remark-gfm"
+import remarkMath from "remark-math"
 import { ButtonCopy } from "../common/button-copy"
 import {
   CodeBlock,
   CodeBlockCode,
   CodeBlockGroup,
 } from "../prompt-kit/code-block"
+import { 
+  ChemistryFormula, 
+  DisplayChemistry, 
+  DisplayMath, 
+  InlineMath 
+} from "../prompt-kit/math-formula"
 
 export type MarkdownProps = {
   children: string
@@ -37,6 +44,25 @@ const INITIAL_COMPONENTS: Partial<Components> = {
       props.node?.position?.start.line === props.node?.position?.end.line
 
     if (isInline) {
+      const content = children as string
+      
+      // Check for LaTeX math delimiters
+      if (content.startsWith('$') && content.endsWith('$') && content.length > 2) {
+        const mathContent = content.slice(1, -1)
+        return <InlineMath>{mathContent}</InlineMath>
+      }
+      
+      // Check for chemistry formula delimiters
+      if (content.startsWith('\\ce{') && content.endsWith('}')) {
+        return <ChemistryFormula>{content}</ChemistryFormula>
+      }
+      
+      // Check for chemistry shorthand (chem: prefix)
+      if (content.startsWith('chem:')) {
+        const chemContent = content.slice(5).trim()
+        return <ChemistryFormula>{chemContent}</ChemistryFormula>
+      }
+
       return (
         <span
           className={cn(
@@ -51,6 +77,15 @@ const INITIAL_COMPONENTS: Partial<Components> = {
     }
 
     const language = extractLanguage(className)
+    
+    // Handle math and chemistry code blocks
+    if (language === 'math' || language === 'latex') {
+      return <DisplayMath className="my-4">{children as string}</DisplayMath>
+    }
+    
+    if (language === 'chemistry' || language === 'chem') {
+      return <DisplayChemistry className="my-4">{children as string}</DisplayChemistry>
+    }
 
     return (
       <CodeBlock className={className}>
@@ -67,6 +102,20 @@ const INITIAL_COMPONENTS: Partial<Components> = {
         <CodeBlockCode code={children as string} language={language} />
       </CodeBlock>
     )
+  },
+  // Handle math blocks
+  div: function DivComponent({ className, children, ...props }) {
+    if (className === 'math math-display') {
+      return <DisplayMath className="my-4">{children as string}</DisplayMath>
+    }
+    return <div className={className} {...props}>{children}</div>
+  },
+  // Handle inline math
+  span: function SpanComponent({ className, children, ...props }) {
+    if (className === 'math math-inline') {
+      return <InlineMath>{children as string}</InlineMath>
+    }
+    return <span className={className} {...props}>{children}</span>
   },
   a: function AComponent({ href, children, ...props }) {
     if (!href) return <span {...props}>{children}</span>
@@ -90,12 +139,21 @@ const MemoizedMarkdownBlock = memo(
     content: string
     components?: Partial<Components>
   }) {
+    // Process LaTeX delimiters in content
+    const processedContent = content
+      // Handle display math with $$ delimiters
+      .replace(/\$\$([\s\S]*?)\$\$/g, '```math\n$1\n```')
+      // Handle chemistry formulas with chem: prefix
+      .replace(/chem:\s*([^\s\n]+)/g, '```chemistry\n$1\n```')
+      // Handle chemistry formulas with \ce{} syntax
+      .replace(/\\ce\{([^}]+)\}/g, '```chemistry\n$1\n```')
+
     return (
       <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkBreaks]}
+        remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]}
         components={components}
       >
-        {content}
+        {processedContent}
       </ReactMarkdown>
     )
   },

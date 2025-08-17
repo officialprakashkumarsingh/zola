@@ -42,7 +42,9 @@ function CodeBlockCode({
 
   useEffect(() => {
     async function highlight() {
-      const isDarkTheme = appTheme?.startsWith("dark") || appTheme === "dark"
+      const isDarkTheme = appTheme?.startsWith("dark") || 
+                         appTheme === "dark" || 
+                         ["theme-cyberpunk", "theme-midnight", "theme-neon"].includes(appTheme || "")
       const html = await codeToHtml(code, {
         lang: language,
         theme: isDarkTheme ? "github-dark" : "github-light",
