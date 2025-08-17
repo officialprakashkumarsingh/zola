@@ -68,9 +68,22 @@ export default async function RootLayout({
                     >
                       <ThemeProvider
                         attribute="class"
-                        defaultTheme="light"
+                        defaultTheme="light-default"
                         enableSystem
                         disableTransitionOnChange
+                        themes={[
+                          "system",
+                          "light-default",
+                          "light-warm",
+                          "light-cool",
+                          "light-sage",
+                          "light-lavender",
+                          "dark-default",
+                          "dark-slate",
+                          "dark-forest",
+                          "dark-ocean",
+                          "dark-purple"
+                        ]}
                       >
                         <SidebarProvider defaultOpen>
                           <Toaster position="top-center" />
