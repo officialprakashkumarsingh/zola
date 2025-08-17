@@ -271,6 +271,39 @@ function SingleToolCard({
   const renderResults = () => {
     if (!parsedResult) return "No result data available"
 
+    // Handle image generation results
+    if (
+      typeof parsedResult === "object" &&
+      parsedResult !== null &&
+      "images" in parsedResult &&
+      Array.isArray(parsedResult.images)
+    ) {
+      return (
+        <div className="space-y-4">
+          <div className="text-sm font-medium text-green-600 dark:text-green-400">
+            ✅ {parsedResult.images.length} image{parsedResult.images.length !== 1 ? 's' : ''} generated successfully
+          </div>
+          <div className="grid gap-4">
+            {parsedResult.images.map((image: any, index: number) => (
+              <div key={index} className="space-y-2">
+                <img
+                  src={image.url}
+                  alt={image.prompt || `Generated image ${index + 1}`}
+                  className="rounded-lg border max-w-full h-auto"
+                  style={{ maxHeight: '400px' }}
+                />
+                <div className="text-xs text-muted-foreground">
+                  <div><strong>Prompt:</strong> {image.prompt}</div>
+                  <div><strong>Size:</strong> {image.size}</div>
+                  <div><strong>Quality:</strong> {image.quality}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )
+    }
+
     // Handle array of items with url, title, and snippet (like search results)
     if (Array.isArray(parsedResult) && parsedResult.length > 0) {
       // Check if items look like search results

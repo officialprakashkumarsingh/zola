@@ -2,6 +2,7 @@ import { SYSTEM_PROMPT_DEFAULT } from "@/lib/config"
 import { getAllModels } from "@/lib/models"
 import { getProviderForModel } from "@/lib/openproviders/provider-map"
 import type { ProviderWithoutOllama } from "@/lib/user-keys"
+import { tools } from "@/lib/tools"
 import { Attachment } from "@ai-sdk/ui-utils"
 import { Message as MessageAISDK, streamText, ToolSet } from "ai"
 import {
@@ -93,7 +94,7 @@ export async function POST(req: Request) {
       model: modelConfig.apiSdk(apiKey, { enableSearch }),
       system: effectiveSystemPrompt,
       messages: messages,
-      tools: {} as ToolSet,
+      tools: tools,
       maxSteps: 10,
       onError: (err: unknown) => {
         console.error("Streaming error occurred:", err)
