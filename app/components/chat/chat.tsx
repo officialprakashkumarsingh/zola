@@ -130,8 +130,28 @@ export function Chat() {
       onDelete: handleDelete,
       onEdit: handleEdit,
       onReload: handleReload,
+      onModifyResponse: async (style: any, originalResponse: string) => {
+        // Create a modification request
+        const modificationPrompt = `${style.prompt}\n\n"${originalResponse}"`
+        console.log('Modifying response with style:', style.name, 'Prompt:', modificationPrompt)
+        
+        // Set the input and submit
+        handleInputChange(modificationPrompt)
+        await submit()
+      },
+      onMultiModelRequest: async (models: any[], originalMessage: string) => {
+        console.log('Multi-model request for models:', models.map(m => m.name), 'Message:', originalMessage)
+        
+        // For now, just add a message indicating multi-model comparison
+        // In a full implementation, this would trigger multiple API calls
+        const multiModelPrompt = `Compare responses from ${models.map(m => m.name).join(', ')} for this question: "${originalMessage}"`
+        
+        // Set the input and submit
+        handleInputChange(multiModelPrompt)
+        await submit()
+      },
     }),
-    [messages, status, handleDelete, handleEdit, handleReload]
+    [messages, status, handleDelete, handleEdit, handleReload, handleInputChange, submit]
   )
 
   // Memoize the chat input props

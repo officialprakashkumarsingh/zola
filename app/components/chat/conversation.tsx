@@ -7,6 +7,8 @@ import { ScrollButton } from "@/components/prompt-kit/scroll-button"
 import { Message as MessageType } from "@ai-sdk/react"
 import { useRef } from "react"
 import { Message } from "./message"
+import type { ResponseStyle } from "./modify-response"
+import type { AIModel } from "./multi-model-response"
 
 type ConversationProps = {
   messages: MessageType[]
@@ -14,6 +16,8 @@ type ConversationProps = {
   onDelete: (id: string) => void
   onEdit: (id: string, newText: string) => void
   onReload: () => void
+  onModifyResponse?: (style: ResponseStyle, originalResponse: string) => Promise<void>
+  onMultiModelRequest?: (models: AIModel[], originalMessage: string) => Promise<void>
 }
 
 export function Conversation({
@@ -22,9 +26,10 @@ export function Conversation({
   onDelete,
   onEdit,
   onReload,
+  onModifyResponse,
+  onMultiModelRequest,
 }: ConversationProps) {
   const initialMessageCount = useRef(messages.length)
-
 
   if (!messages || messages.length === 0)
     return <div className="h-full w-full"></div>
@@ -49,6 +54,17 @@ export function Conversation({
             const hasScrollAnchor =
               isLast && messages.length > initialMessageCount.current
 
+            // Find the previous user message for multi-model context
+            let originalUserMessage = ""
+            if (message.role === "assistant") {
+              for (let i = index - 1; i >= 0; i--) {
+                if (messages[i].role === "user") {
+                  originalUserMessage = messages[i].content
+                  break
+                }
+              }
+            }
+
             return (
               <Message
                 key={message.id}
@@ -62,6 +78,9 @@ export function Conversation({
                 hasScrollAnchor={hasScrollAnchor}
                 parts={message.parts}
                 status={status}
+                onModifyResponse={onModifyResponse}
+                onMultiModelRequest={onMultiModelRequest}
+                originalUserMessage={originalUserMessage}
               >
                 {message.content}
               </Message>

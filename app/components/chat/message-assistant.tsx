@@ -299,7 +299,7 @@ export function MessageAssistant({
               onSwitchBranch={switchToBranch}
               onDeleteBranch={deleteBranch}
               currentBranchId={branchingState.currentBranchId}
-              className="opacity-60 transition-opacity group-hover:opacity-100 hover:opacity-100"
+              className="transition-opacity"
             />
           </div>
         )}
