@@ -11,6 +11,7 @@ import { SYSTEM_PROMPT_DEFAULT } from "@/lib/config"
 import { useUserPreferences } from "@/lib/user-preference-store/provider"
 import { useUser } from "@/lib/user-store/provider"
 import { cn } from "@/lib/utils"
+import { getOrCreateGuestUserId } from "@/lib/api"
 import { AnimatePresence, motion } from "motion/react"
 import dynamic from "next/dynamic"
 import { redirect } from "next/navigation"
@@ -104,6 +105,7 @@ export function Chat() {
     handleSuggestion,
     handleReload,
     handleInputChange,
+    append,
   } = useChatCore({
     initialMessages,
     draftValue,
@@ -136,18 +138,18 @@ export function Chat() {
           const modificationPrompt = `${style.prompt}\n\n"${originalResponse}"`
           console.log('Modifying response with style:', style.name, 'Prompt:', modificationPrompt)
           
-          // Set the input first
-          handleInputChange(modificationPrompt)
-          
-          // Submit the modification request
-          return await submit()
+          // Use append to directly send the message
+          await append({
+            role: 'user',
+            content: modificationPrompt,
+          })
         } catch (error) {
           console.error('Error modifying response:', error)
           throw error
         }
       },
     }),
-    [messages, status, handleDelete, handleEdit, handleReload, handleInputChange, submit]
+    [messages, status, handleDelete, handleEdit, handleReload, handleInputChange, submit, append]
   )
 
   // Memoize the chat input props

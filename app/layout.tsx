@@ -73,26 +73,38 @@ export default async function RootLayout({
                         disableTransitionOnChange
                         themes={[
                           "system",
+                          // Light themes
                           "light-default",
                           "light-warm",
                           "light-cool",
                           "light-sage",
                           "light-lavender",
+                          "light-cream",
+                          "light-pearl",
+                          "light-snow",
+                          "light-ivory",
+                          "light-linen",
+                          "light-vanilla",
+                          "light-paper",
+                          "light-ash",
+                          "light-mist",
+                          "light-bone",
+                          // Dark themes
                           "dark-default",
                           "dark-slate",
                           "dark-forest",
                           "dark-ocean",
                           "dark-purple",
-                          "theme-cyberpunk",
-                          "theme-rose",
-                          "theme-amber",
-                          "theme-mint",
-                          "theme-coral",
-                          "theme-midnight",
-                          "theme-coffee",
-                          "theme-neon",
-                          "theme-vintage",
-                          "theme-arctic"
+                          "dark-charcoal",
+                          "dark-graphite",
+                          "dark-onyx",
+                          "dark-obsidian",
+                          "dark-shadow",
+                          "dark-void",
+                          "dark-steel",
+                          "dark-carbon",
+                          "dark-coal",
+                          "dark-pitch"
                         ]}
                       >
                         <SidebarProvider defaultOpen>

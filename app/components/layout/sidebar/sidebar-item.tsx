@@ -3,9 +3,9 @@ import useClickOutside from "@/app/hooks/use-click-outside"
 import { useChats } from "@/lib/chat-store/chats/provider"
 import { Chat } from "@/lib/chat-store/types"
 import { cn } from "@/lib/utils"
-import { Check, X } from "@phosphor-icons/react"
+import { Check, X, PushPin } from "@phosphor-icons/react"
 import Link from "next/link"
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useMemo, useRef, useState, useEffect } from "react"
 import { SidebarItemMenu } from "./sidebar-item-menu"
 
 type SidebarItemProps = {
@@ -17,6 +17,7 @@ export function SidebarItem({ chat, currentChatId }: SidebarItemProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(chat.title || "")
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isPinned, setIsPinned] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const lastChatTitleRef = useRef(chat.title)
   const { updateTitle } = useChats()
@@ -27,6 +28,26 @@ export function SidebarItem({ chat, currentChatId }: SidebarItemProps) {
     lastChatTitleRef.current = chat.title
     setEditTitle(chat.title || "")
   }
+
+  // Load pinned state from localStorage
+  useEffect(() => {
+    const loadPinnedState = () => {
+      const pinnedChats = JSON.parse(localStorage.getItem('pinnedChats') || '[]')
+      setIsPinned(pinnedChats.includes(chat.id))
+    }
+
+    loadPinnedState()
+
+    const handlePinnedChatsChanged = (event: CustomEvent) => {
+      const pinnedChats = event.detail.pinnedChats
+      setIsPinned(pinnedChats.includes(chat.id))
+    }
+
+    window.addEventListener('pinnedChatsChanged', handlePinnedChatsChanged as EventListener)
+    return () => {
+      window.removeEventListener('pinnedChatsChanged', handlePinnedChatsChanged as EventListener)
+    }
+  }, [chat.id])
 
   const handleStartEditing = useCallback(() => {
     setIsEditing(true)
@@ -184,10 +205,13 @@ export function SidebarItem({ chat, currentChatId }: SidebarItemProps) {
             onClick={handleLinkClick}
           >
             <div
-              className="text-primary relative line-clamp-1 mask-r-from-80% mask-r-to-85% px-2 py-2 text-sm text-ellipsis whitespace-nowrap"
+              className="text-primary relative line-clamp-1 mask-r-from-80% mask-r-to-85% px-2 py-2 text-sm text-ellipsis whitespace-nowrap flex items-center gap-2"
               title={displayTitle}
             >
-              {displayTitle}
+              {isPinned && (
+                <PushPin size={12} className="text-muted-foreground flex-shrink-0" />
+              )}
+              <span className="truncate">{displayTitle}</span>
             </div>
           </Link>
 
