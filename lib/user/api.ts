@@ -39,8 +39,8 @@ export async function getUserProfile(): Promise<UserProfile | null> {
     .eq("id", user.id)
     .single()
 
-  // Don't load anonymous users in the user store
-  if (userProfileData?.anonymous) return null
+  // Don't load anonymous users in the user store (but allow newly authenticated users)
+  if (userProfileData?.anonymous === true) return null
 
   // Format user preferences if they exist
   const formattedPreferences = userProfileData?.user_preferences

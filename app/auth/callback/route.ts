@@ -67,7 +67,15 @@ export async function GET(request: Request) {
   const host = request.headers.get("host")
   const protocol = host?.includes("localhost") ? "http" : "https"
 
-  const redirectUrl = `${protocol}://${host}${next}`
+  // Force redirect to home page to refresh user state
+  const redirectUrl = `${protocol}://${host}/`
 
-  return NextResponse.redirect(redirectUrl)
+  // Add cache-busting parameter to force refresh
+  const finalRedirectUrl = new URL(redirectUrl)
+  finalRedirectUrl.searchParams.set('auth_success', 'true')
+  finalRedirectUrl.searchParams.set('t', Date.now().toString())
+
+  console.log("Auth callback redirecting to:", finalRedirectUrl.toString())
+
+  return NextResponse.redirect(finalRedirectUrl.toString())
 }

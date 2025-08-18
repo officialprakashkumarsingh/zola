@@ -14,6 +14,7 @@ import { getUserProfile } from "@/lib/user/api"
 import { ThemeProvider } from "next-themes"
 import Script from "next/script"
 import { LayoutClient } from "./layout-client"
+import { AuthSuccessHandler } from "./components/auth/auth-success-handler"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -108,6 +109,7 @@ export default async function RootLayout({
                         ]}
                       >
                         <SidebarProvider defaultOpen>
+                          <AuthSuccessHandler />
                           <Toaster position="top-center" />
                           {children}
                         </SidebarProvider>
