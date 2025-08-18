@@ -27,7 +27,7 @@ export const FREE_MODELS_IDS = [
 export const MODEL_DEFAULT = "gpt-4.1-nano"
 
 export const APP_NAME = "AhamAI"
-export const APP_DOMAIN = "https://ahamai.chat"
+export const APP_DOMAIN = process.env.NEXT_PUBLIC_SITE_URL || "https://ahamai.chat"
 
 export const SUGGESTIONS = [
   {

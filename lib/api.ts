@@ -104,16 +104,18 @@ export async function updateChatModel(chatId: string, model: string) {
  */
 export async function signInWithGoogle(supabase: SupabaseClient) {
   try {
-    const isDev = process.env.NODE_ENV === "development"
+    // Get base URL dynamically - prioritize browser location for deployed apps
+    const baseUrl = typeof window !== "undefined"
+      ? window.location.origin  // Use current domain in browser
+      : process.env.NEXT_PUBLIC_VERCEL_URL
+        ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`  // Vercel deployment
+        : process.env.NEXT_PUBLIC_SITE_URL  // Custom deployment URL
+          ? process.env.NEXT_PUBLIC_SITE_URL
+          : process.env.NODE_ENV === "development"
+            ? "http://localhost:3000"  // Local development fallback
+            : APP_DOMAIN  // Final fallback
 
-    // Get base URL dynamically (will work in both browser and server environments)
-    const baseUrl = isDev
-      ? "http://localhost:3000"
-      : typeof window !== "undefined"
-        ? window.location.origin
-        : process.env.NEXT_PUBLIC_VERCEL_URL
-          ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
-          : APP_DOMAIN
+    console.log("OAuth redirect URL:", `${baseUrl}/auth/callback`)
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
