@@ -9,6 +9,8 @@ export async function fetchUserProfile(
   const supabase = createClient()
   if (!supabase) return null
 
+  console.log("🔍 Fetching user profile for ID:", id)
+
   const { data, error } = await supabase
     .from("users")
     .select("*")
@@ -16,18 +18,31 @@ export async function fetchUserProfile(
     .single()
 
   if (error || !data) {
-    console.error("Failed to fetch user:", error)
+    console.error("❌ Failed to fetch user:", error)
     return null
   }
 
-  // Don't return anonymous users
-  if (data.anonymous) return null
+  console.log("📄 User data fetched:", {
+    id: data.id,
+    email: data.email,
+    anonymous: data.anonymous,
+    display_name: data.display_name
+  })
 
-  return {
+  // Don't return anonymous users
+  if (data.anonymous === true) {
+    console.log("🚫 User is anonymous, not returning profile")
+    return null
+  }
+
+  const profile = {
     ...data,
     profile_image: data.profile_image || "",
     display_name: data.display_name || "",
   }
+
+  console.log("✅ Returning user profile:", profile.email)
+  return profile
 }
 
 export async function updateUserProfile(

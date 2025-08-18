@@ -7,6 +7,7 @@ import {
   subscribeToUserUpdates,
   updateUserProfile,
 } from "@/lib/user-store/api"
+import { createClient } from "@/lib/supabase/client"
 import type { UserProfile } from "@/lib/user/types"
 import { createContext, useContext, useEffect, useState } from "react"
 
@@ -31,12 +32,27 @@ export function UserProvider({
   const [isLoading, setIsLoading] = useState(false)
 
   const refreshUser = async () => {
-    if (!user?.id) return
-
     setIsLoading(true)
     try {
-      const updatedUser = await fetchUserProfile(user.id)
-      if (updatedUser) setUser(updatedUser)
+      // If we already have a user, refresh their profile
+      if (user?.id) {
+        const updatedUser = await fetchUserProfile(user.id)
+        if (updatedUser) setUser(updatedUser)
+        return
+      }
+
+      // If no user in state, try to get current authenticated user from Supabase
+      const supabase = createClient()
+      if (!supabase) return
+
+      const { data: { user: authUser }, error } = await supabase.auth.getUser()
+      if (error || !authUser) return
+
+      // Fetch the full user profile
+      const userProfile = await fetchUserProfile(authUser.id)
+      if (userProfile) {
+        setUser(userProfile)
+      }
     } finally {
       setIsLoading(false)
     }

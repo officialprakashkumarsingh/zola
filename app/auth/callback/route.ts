@@ -47,6 +47,8 @@ export async function GET(request: Request) {
   }
 
   try {
+    console.log("👤 Creating user record for:", user.email, "ID:", user.id)
+    
     // Try to insert user only if not exists
     const { error: insertError } = await supabaseAdmin.from("users").insert({
       id: user.id,
@@ -54,14 +56,19 @@ export async function GET(request: Request) {
       created_at: new Date().toISOString(),
       message_count: 0,
       premium: false,
+      anonymous: false, // Explicitly set to false for authenticated users
       favorite_models: [MODEL_DEFAULT],
     })
 
     if (insertError && insertError.code !== "23505") {
-      console.error("Error inserting user:", insertError)
+      console.error("❌ Error inserting user:", insertError)
+    } else if (insertError?.code === "23505") {
+      console.log("✅ User already exists, skipping insert")
+    } else {
+      console.log("✅ User record created successfully")
     }
   } catch (err) {
-    console.error("Unexpected user insert error:", err)
+    console.error("❌ Unexpected user insert error:", err)
   }
 
   const host = request.headers.get("host")
