@@ -21,7 +21,6 @@ type MultiChatInputProps = {
   onFileRemove: (file: File) => void
   selectedModelIds: string[]
   onSelectedModelIdsChange: (modelIds: string[]) => void
-  isUserAuthenticated: boolean
   stop: () => void
   status?: "submitted" | "streaming" | "ready" | "error"
   anyLoading?: boolean

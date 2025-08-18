@@ -1,6 +1,6 @@
 "use client"
 
-import { PopoverContentAuth } from "@/app/components/chat-input/popover-content-auth"
+
 import { useBreakpoint } from "@/app/hooks/use-breakpoint"
 import { useKeyShortcut } from "@/app/hooks/use-key-shortcut"
 import { Button } from "@/components/ui/button"
@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
-import { Popover, PopoverTrigger } from "@/components/ui/popover"
+
 import {
   Tooltip,
   TooltipContent,
@@ -46,7 +46,6 @@ type MultiModelSelectorProps = {
   selectedModelIds: string[]
   setSelectedModelIds: (modelIds: string[]) => void
   className?: string
-  isUserAuthenticated?: boolean
   maxModels?: number
 }
 
@@ -54,7 +53,6 @@ export function MultiModelSelector({
   selectedModelIds,
   setSelectedModelIds,
   className,
-  isUserAuthenticated = true,
   maxModels = 5,
 }: MultiModelSelectorProps) {
   const { models, isLoading: isLoadingModels, favoriteModels } = useModel()
@@ -303,33 +301,7 @@ export function MultiModelSelector({
     setSearchQuery(e.target.value)
   }
 
-  // If user is not authenticated, show the auth popover
-  if (!isUserAuthenticated) {
-    return (
-      <Popover>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <PopoverTrigger asChild>
-              <Button
-                size="sm"
-                variant="secondary"
-                className={cn(
-                  "border-border dark:bg-secondary text-accent-foreground h-9 w-auto border bg-transparent",
-                  className
-                )}
-                type="button"
-              >
-                <span>Select models</span>
-                <CaretDownIcon className="size-4" />
-              </Button>
-            </PopoverTrigger>
-          </TooltipTrigger>
-          <TooltipContent>Select models</TooltipContent>
-        </Tooltip>
-        <PopoverContentAuth />
-      </Popover>
-    )
-  }
+
 
   if (isMobile) {
     return (

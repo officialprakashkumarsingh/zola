@@ -29,7 +29,6 @@ type ChatInputProps = {
   hasSuggestions?: boolean
   onSelectModel: (model: string) => void
   selectedModel: string
-  isUserAuthenticated: boolean
   stop: () => void
   status?: "submitted" | "streaming" | "ready" | "error"
   setEnableSearch: (enabled: boolean) => void
@@ -48,7 +47,6 @@ export function ChatInput({
   hasSuggestions,
   onSelectModel,
   selectedModel,
-  isUserAuthenticated,
   stop,
   status,
   setEnableSearch,
@@ -104,12 +102,7 @@ export function ChatInput({
         item.type.startsWith("image/")
       )
 
-      if (!isUserAuthenticated && hasImageContent) {
-        e.preventDefault()
-        return
-      }
-
-      if (isUserAuthenticated && hasImageContent) {
+      if (hasImageContent) {
         const imageFiles: File[] = []
 
         for (const item of Array.from(items)) {
@@ -132,7 +125,7 @@ export function ChatInput({
       }
       // Text pasting will work by default for everyone
     },
-    [isUserAuthenticated, onFileUpload]
+    [onFileUpload]
   )
 
   useMemo(() => {
@@ -168,20 +161,17 @@ export function ChatInput({
             <div className="flex gap-2">
               <ButtonFileUpload
                 onFileUpload={onFileUpload}
-                isUserAuthenticated={isUserAuthenticated}
                 model={selectedModel}
               />
               <ModelSelector
                 selectedModelId={selectedModel}
                 setSelectedModelId={onSelectModel}
-                isUserAuthenticated={isUserAuthenticated}
                 className="rounded-full"
               />
               {hasSearchSupport ? (
                 <ButtonSearch
                   isSelected={enableSearch}
                   onToggle={setEnableSearch}
-                  isAuthenticated={isUserAuthenticated}
                 />
               ) : null}
             </div>

@@ -340,7 +340,6 @@ export function MultiChat() {
       onFileRemove: handleFileRemove,
       selectedModelIds,
       onSelectedModelIdsChange: setSelectedModelIds,
-      isUserAuthenticated: isAuthenticated,
       stop: handleStop,
       status: anyLoading ? ("streaming" as const) : ("ready" as const),
       anyLoading,
@@ -353,7 +352,6 @@ export function MultiChat() {
       handleFileUpload,
       handleFileRemove,
       selectedModelIds,
-      isAuthenticated,
       handleStop,
       anyLoading,
     ]
