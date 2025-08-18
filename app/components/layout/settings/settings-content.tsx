@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { isSupabaseEnabled } from "@/lib/supabase/config"
 import { cn, isDev } from "@/lib/utils"
 import {
+  ChartBarIcon,
   CubeIcon,
   GearSixIcon,
   KeyIcon,
@@ -24,12 +25,13 @@ import { OllamaSection } from "./connections/ollama-section"
 import { AccountManagement } from "./general/account-management"
 import { UserProfile } from "./general/user-profile"
 import { ModelsSettings } from "./models/models-settings"
+import { UsageDashboard } from "./usage/usage-dashboard"
 
 type SettingsContentProps = {
   isDrawer?: boolean
 }
 
-type TabType = "general" | "appearance" | "models" | "connections"
+type TabType = "general" | "appearance" | "models" | "connections" | "usage"
 
 export function SettingsContent({
   isDrawer = false,
@@ -102,6 +104,15 @@ export function SettingsContent({
                   <PlugsConnectedIcon className="size-4" />
                   <span>Connections</span>
                 </TabsTrigger>
+                {isSupabaseEnabled && (
+                  <TabsTrigger
+                    value="usage"
+                    className="flex shrink-0 items-center gap-2"
+                  >
+                    <ChartBarIcon className="size-4" />
+                    <span>Usage</span>
+                  </TabsTrigger>
+                )}
               </TabsList>
             </div>
 
@@ -135,6 +146,12 @@ export function SettingsContent({
               {isDev && <OllamaSection />}
               {isDev && <DeveloperTools />}
             </TabsContent>
+
+            {isSupabaseEnabled && (
+              <TabsContent value="usage" className="space-y-6 px-6">
+                <UsageDashboard />
+              </TabsContent>
+            )}
           </div>
         ) : (
           // Desktop version - tabs on left
@@ -188,6 +205,17 @@ export function SettingsContent({
                     <span>Connections</span>
                   </div>
                 </TabsTrigger>
+                {isSupabaseEnabled && (
+                  <TabsTrigger
+                    value="usage"
+                    className="w-full justify-start rounded-md px-3 py-2 text-left"
+                  >
+                    <div className="flex items-center gap-2">
+                      <ChartBarIcon className="size-4" />
+                      <span>Usage</span>
+                    </div>
+                  </TabsTrigger>
+                )}
               </div>
             </TabsList>
 
@@ -222,6 +250,12 @@ export function SettingsContent({
                 {isDev && <OllamaSection />}
                 {isDev && <DeveloperTools />}
               </TabsContent>
+
+              {isSupabaseEnabled && (
+                <TabsContent value="usage" className="mt-0 space-y-6">
+                  <UsageDashboard />
+                </TabsContent>
+              )}
             </div>
           </>
         )}
