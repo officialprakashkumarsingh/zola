@@ -1,9 +1,11 @@
 import {
   getAllModels,
+  getModelsForProvider,
   getModelsForUserProviders,
   getModelsWithAccessFlags,
   refreshModelsCache,
 } from "@/lib/models"
+import { ModelConfig } from "@/lib/models/types"
 import { createClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 
@@ -65,9 +67,22 @@ export async function GET() {
       })
     }
 
-    const models = await getModelsForUserProviders(userProviders)
+    // Always include AhamAI models since they're free, plus user's configured providers
+    const userProviderModels = await getModelsForUserProviders(userProviders)
+    const ahamaiModels = await getModelsForProvider("ahamai")
+    const freeModels = await getModelsWithAccessFlags()
+    
+    // Combine user provider models with AhamAI models and other free models
+    // Remove duplicates by model ID
+    const allModels = [...userProviderModels, ...ahamaiModels, ...freeModels]
+    const uniqueModels = allModels.reduce((acc: ModelConfig[], model: ModelConfig) => {
+      if (!acc.find(m => m.id === model.id)) {
+        acc.push(model)
+      }
+      return acc
+    }, [])
 
-    return new Response(JSON.stringify({ models }), {
+    return new Response(JSON.stringify({ models: uniqueModels }), {
       status: 200,
       headers: {
         "Content-Type": "application/json",

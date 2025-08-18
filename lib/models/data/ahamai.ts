@@ -31,7 +31,7 @@ const ahamaiStaticModels: ModelConfig[] = [
     description: "Fast and efficient model via AhamAI",
     tags: ["fast", "efficient"],
     contextWindow: 4096,
-    vision: false,
+    vision: true,
     tools: true,
     audio: false,
     openSource: false,
@@ -80,7 +80,7 @@ async function fetchAhamAIModels(): Promise<ModelConfig[]> {
       description: `${model.id} model via AhamAI`,
       tags: ["ahamai"],
       contextWindow: 4096, // Default value
-      vision: model.id.includes("vision") || model.id.includes("4o"),
+      vision: true, // Enable file uploads for all AhamAI models
       tools: true,
       audio: false,
       openSource: false,

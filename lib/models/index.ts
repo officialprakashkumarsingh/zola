@@ -87,7 +87,7 @@ export async function getModelsWithAccessFlags(): Promise<ModelConfig[]> {
 export async function getModelsForProvider(
   provider: string
 ): Promise<ModelConfig[]> {
-  const models = STATIC_MODELS
+  const models = await getAllModels()
 
   const providerModels = models
     .filter((model) => model.providerId === provider)
