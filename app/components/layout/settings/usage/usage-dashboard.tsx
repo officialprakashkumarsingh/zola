@@ -102,7 +102,7 @@ function UsageCard({
           value={percentage} 
           className={cn(
             "h-2",
-            type === "pro" && percentage > 80 && "data-[state=complete]:bg-orange-500"
+            type === "pro" && percentage > 80 && "[&>[data-state=complete]]:bg-orange-500"
           )}
         />
         
@@ -142,6 +142,21 @@ function StatCard({
 }
 
 function ActivityChart({ days }: { days: UsageStats['recent']['days'] }) {
+  if (!days || days.length === 0) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium">Activity (Last 7 Days)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground text-center py-4">
+            No activity data available
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
+
   const maxMessages = Math.max(...days.map(d => d.messages), 1)
   
   return (
@@ -151,7 +166,7 @@ function ActivityChart({ days }: { days: UsageStats['recent']['days'] }) {
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {days.map((day, index) => {
+          {days.map((day) => {
             const height = (day.messages / maxMessages) * 100
             
             return (
@@ -176,31 +191,18 @@ function ActivityChart({ days }: { days: UsageStats['recent']['days'] }) {
             )
           })}
         </div>
-        
-        {days.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            No activity in the last 7 days
-          </p>
-        )}
       </CardContent>
     </Card>
   )
 }
 
-export function UsageDashboard() {
-  const [isExpanded, setIsExpanded] = useState(false)
-  
-  const { data: stats, isLoading, error } = useQuery({
-    queryKey: ['usage-stats'],
-    queryFn: fetchUsageStats,
-    refetchInterval: 60000, // Refetch every minute
-  })
-
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
+function LoadingSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <div className="h-4 w-24 bg-muted rounded animate-pulse mb-3" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[...Array(4)].map((_, i) => (
+          {[...Array(2)].map((_, i) => (
             <Card key={i}>
               <CardContent className="p-6">
                 <div className="space-y-3">
@@ -213,16 +215,59 @@ export function UsageDashboard() {
           ))}
         </div>
       </div>
-    )
+      
+      <Separator />
+      
+      <div>
+        <div className="h-4 w-16 bg-muted rounded animate-pulse mb-3" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-4">
+                <div className="space-y-2">
+                  <div className="h-3 bg-muted rounded animate-pulse" />
+                  <div className="h-6 bg-muted rounded animate-pulse" />
+                  <div className="h-3 bg-muted rounded animate-pulse" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function UsageDashboard() {
+  const [isExpanded, setIsExpanded] = useState(false)
+  
+  const { data: stats, isLoading, error, refetch } = useQuery({
+    queryKey: ['usage-stats'],
+    queryFn: fetchUsageStats,
+    refetchInterval: 60000, // Refetch every minute
+    retry: 1,
+    staleTime: 30000, // Consider data stale after 30 seconds
+  })
+
+  if (isLoading) {
+    return <LoadingSkeleton />
   }
 
   if (error || !stats) {
     return (
       <Card>
         <CardContent className="p-6">
-          <p className="text-sm text-muted-foreground text-center">
-            Failed to load usage statistics. Please try again later.
-          </p>
+          <div className="text-center space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Failed to load usage statistics
+            </p>
+            <button
+              onClick={() => refetch()}
+              className="text-sm text-primary hover:underline"
+            >
+              Try again
+            </button>
+          </div>
         </CardContent>
       </Card>
     )
