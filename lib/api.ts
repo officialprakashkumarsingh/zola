@@ -1,5 +1,6 @@
 import { APP_DOMAIN } from "@/lib/config"
 import type { UserProfile } from "@/lib/user/types"
+import { getOAuthCallbackUrl } from "@/lib/utils/get-base-url"
 import { SupabaseClient } from "@supabase/supabase-js"
 import { fetchClient } from "./fetch"
 import { API_ROUTE_CREATE_GUEST, API_ROUTE_UPDATE_CHAT_MODEL } from "./routes"
@@ -104,23 +105,16 @@ export async function updateChatModel(chatId: string, model: string) {
  */
 export async function signInWithGoogle(supabase: SupabaseClient) {
   try {
-    // Get base URL dynamically - prioritize browser location for deployed apps
-    const baseUrl = typeof window !== "undefined"
-      ? window.location.origin  // Use current domain in browser
-      : process.env.NEXT_PUBLIC_VERCEL_URL
-        ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`  // Vercel deployment
-        : process.env.NEXT_PUBLIC_SITE_URL  // Custom deployment URL
-          ? process.env.NEXT_PUBLIC_SITE_URL
-          : process.env.NODE_ENV === "development"
-            ? "http://localhost:3000"  // Local development fallback
-            : APP_DOMAIN  // Final fallback
-
-    console.log("OAuth redirect URL:", `${baseUrl}/auth/callback`)
+    const callbackUrl = getOAuthCallbackUrl()
+    
+    console.log("OAuth redirect URL:", callbackUrl)
+    console.log("Window available:", typeof window !== "undefined")
+    console.log("Current location:", typeof window !== "undefined" ? window.location.href : "N/A")
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${baseUrl}/auth/callback`,
+        redirectTo: callbackUrl,
         queryParams: {
           access_type: "offline",
           prompt: "consent",
